@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: prober_const.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: prober_const.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Enumeration of a collection of customized error codes defined and used by ProberSDK.
+ * @enum {number}
+ * @property {number} OK Indicates a successful operation. Default value is 0.
+ * @property {number} INVALID_ARGS Indicates invalid arguments passed to a function. Default value is -1.
+ * @property {number} API_NOT_SUPPORTED Indicates that a specific API is not supported. Default value is -2.
+ * @constant
+ */
+export const ERR_CODE = {
+  OK: 0,
+  INVALID_ARGS: -1,
+  API_NOT_SUPPORTED: -2,
+};
+
+/**
+ * Enumeration of the rendering types supported by ProbeSDK.
+ *
+ * @enum {number}
+ * @property {number} VIDEO_TAG a video stream will be rendered on the {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video|video} tag. Default value is 1.
+ * @property {number} WEBGL a video stream will be rendered on a canvas with a {@link https://developer.mozilla.org/en-US/docs/Glossary/WebGL|WebGL} renderer. Default value is 2.
+ * @property {number} WEBGL_2 a video stream will be rendered on a canvas with a {@link https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API#webgl_2|WebGL2} renderer. Default value is 3.
+ * @property {number} WEBGPU a video stream will be rendered on a canvas with a {@link https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API|WebGPU} renderer. Default value is 4.
+ * @constant
+ */
+export const RENDERER_TYPE = {
+  VIDEO_TAG: 1,
+  WEBGL: 2,
+  WEBGL_2: 3,
+  WEBGPU: 4,
+};
+
+/**
+ * Enumeration of the data type of the network diagnostic.
+ * It will be used to determine the type of data you received and how to handle them.
+ *
+ * @enum {number}
+ * @property {number} STATS indicates the realtime statistics of the network diagnostic. Default value is 1.
+ * @property {number} REPORT indicates the final report of diagnostic, basic information and supported features. Default value is 2.
+ * @constant
+ */
+export const NET_PROBING_DATA_TYPE = {
+  STATS: 1,
+  REPORT: 2,
+};
+
+/**
+ * Enumeration of the protocol type that ProbeSDK checks in a network diagnostic.
+ *
+ * @enum {number}
+ * @property {number} HTTPS https(https://) protocol. Default value is 1.
+ * @property {number} WEB_SOCKET WebSocket(wss:// ws://) protocol. Default value is 2.
+ * @property {number} DATA_CHANNEL the data channel which is used for media communication. Default value is 3.
+ * @property {number} WEB_TRANSPORT WebTransport protocol(not supported now). Default value is 4.
+ * @constant
+ */
+export const PROTOCOL_TYPE = {
+  HTTPS: 1,
+  WEB_SOCKET: 2,
+  DATA_CHANNEL: 3,
+  WEB_TRANSPORT: 4,
+};
+
+/**
+ * Enumeration of the network quality level.
+ *
+ * @enum {number}
+ * @property {number} VERY_BAD network quality is very bad. Default value is 0.
+ * @property {number} BAD network quality is bad. Default value is 1.
+ * @property {number} NOT_GOOD network quality is not good enough. Default value is 2.
+ * @property {number} FAIR network quality is fine. Default value is 3.
+ * @property {number} GOOD network quality is good. Default value is 4.
+ * @property {number} EXCELLENT network quality is excellent. Default value is 5.
+ * @property {number} UNDEFINED network quality is unknown. If get this value, means the network diagnostic is not started yet or gets some exceptions. Default value is 255.
+ * @constant
+ */
+export const NETWORK_QUALITY_LEVEL = {
+  VERY_BAD: 0,
+  BAD: 1,
+  NOT_GOOD: 2,
+  FAIR: 3,
+  GOOD: 4,
+  EXCELLENT: 5,
+  UNDEFINED: 255,
+};
+
+/**
+ * Enumeration of the bandwidth quality level.
+ *
+ * @enum {number}
+ * @property {number} VERY_LOW bandwidth quality is very low. Default value is 0.
+ * @property {number} LOW bandwidth quality is low. Default value is 1.
+ * @property {number} NORMAL bandwidth quality is normal. Default value is 2.
+ * @property {number} UNDEFINED bandwidth quality is unknown. If get this value, means the network diagnostic is not started yet or gets some exceptions. Default value is 255.
+ * @constant
+ */
+export const BANDWIDTH_QUALITY_LEVEL = {
+  VERY_LOW: 0,
+  LOW: 1,
+  NORMAL: 2,
+  UNDEFINED: 255,
+};
+
+/**
+ * Enumeration of attribute index of the basic information.
+ *
+ * @enum {number}
+ * @property {number} BROWSER_NAME represents the name of the browser. Default value is 0.
+ * @property {number} BROWSER_VERSION represents the version of the browser. Default value is 1.
+ * @property {number} OS_NAME represents the name of the OS. Default value is 2.
+ * @property {number} USER_AGENT represents the user agent. Default value is 3.
+ * @property {number} HW_CONCURRENCY represents the hardware concurrency. Default value is 4.
+ * @property {number} GPU_VENDOR represents the GPU vendor. Default value is 5.
+ * @property {number} GPU_RENDERER represents the GPU renderer information. Default value is 6.
+ * @property {number} VIDEOFRAME represents the VideoFrame API. Default value is 7.
+ * @property {number} OFFSCREENCANVAS represents the OffscreenCanvas API. Default value is 8.
+ * @property {number} SIMD represents the SIMD feature. Default value is 9.
+ * @property {number} WEB_CODEC represents the web codec feature. Default value is 10.
+ * @property {number} HW_ACC represents the hardware acceleration. Default value is 11.
+ * @property {number} GRAPHICS_ACC represents the graphics acceleration in chromium system settings. Default value is 12.
+ * @property {number} MIN_BROWSER_VERSION represents the minimum browser version. Default value is 13.
+ * @constant
+ */
+export const BASIC_INFO_ATTR_INDEX = {
+  BROWSER_NAME: 0,
+  BROWSER_VERSION: 1,
+  OS_NAME: 2,
+  USER_AGENT: 3,
+  HW_CONCURRENCY: 4,
+  GPU_VENDOR: 5,
+  GPU_RENDERER: 6,
+  VIDEOFRAME: 7,
+  OFFSCREENCANVAS: 8,
+  SIMD: 9,
+  WEB_CODEC: 10,
+  HW_ACC: 11,
+  GRAPHICS_ACC: 12,
+  MIN_BROWSER_VERSION: 13,
+};
+
+/**
+ * Enumeration of index of the supported features.
+ * 
+ * @enum {number}
+ * @property {number} AUDIO_DENOISE feature index of audio denoise. Default value is 0.
+ * @property {number} AEC feature index of audio echo cancellation. Default value is 1.
+ * @property {number} AUDIO_STEREO feature index of audio stereo. Default value is 2.
+ * @property {number} VIRTUAL_BACKGROUND feature index of video virtual background. Default value is 3.
+ * @property {number} VIDEO_MASK feature index of video mask. Default value is 4.
+ * @property {number} WEBGPU feature index of video WebGPU rendering. Default value is 5.
+ * @property {number} VIDEO_SEND_HD feature index of video sending HD. Default value is 6.
+ * @property {number} VIDEO_SEND_FULL_HD feature index of video sending full HD. Default value is 7.
+ * @property {number} DT_GALLERY_VIEW_3x3 feature index of desktop supporting 3x3 gallery view. Default value is 8.
+ * @property {number} DT_GALLERY_VIEW_5x5 feature index of desktop supporting 5x5 gallery view. Default value is 9.
+ * @property {number} SCREEN_SHARING feature index of screen sharing. Default value is 10.
+ * @constant
+ */
+export const SUPPORTED_FEATURE_INDEX = {
+  AUDIO_DENOISE: 0,
+  AEC: 1,
+  AUDIO_STEREO: 2,
+  VIRTUAL_BACKGROUND: 3,
+  VIDEO_MASK: 4,
+  WEBGPU: 5,
+  VIDEO_SEND_HD: 6,
+  VIDEO_SEND_FULL_HD: 7,
+  DT_GALLERY_VIEW_3x3: 8,
+  DT_GALLERY_VIEW_5x5: 9,
+  SCREEN_SHARING: 10,
+};
+
+/**
+ * The default probing duration, 120 seconds.
+ */
+export const DEF_PROBE_DURATION = 2 * 60 * 1000;
+
+/**
+ * The default connection timeout, 20 seconds.
+ */
+export const DEF_CONNECT_TIMEOUT = 2 * 10 * 1000;
+
+export const JWT_DOMAINS = {
+  PROD: 'zoom.us',
+  GO: 'go.zoom.us',
+  DEV: 'zoomdev.us',
+  DEV_EP: 'devep.zoomdev.us',
+  DEV_INT: 'dev-integration.zoomdev.us',
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Aug 07 2024 12:50:56 GMT+0800 (China Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

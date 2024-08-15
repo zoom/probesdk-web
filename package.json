@@ -1,0 +1,39 @@
+{
+  "name": "@zoom/probesdk",
+  "package-name": "probesdk",
+  "version": "1.0.0",
+  "description": "Zoom ProbeSDK tests the end user device and network capabilities, and the Zoom server connection.",
+  "author": "Zoom Video Communications, Inc.",
+  "contributors": [
+    {
+      "name": "Clever Su"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zoom/probesdk-web.git"
+  },
+  "keywords": [
+    "zoom",
+    "probe",
+    "sdk",
+    "web"
+  ],
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/zoom/probesdk-web/issues"
+  },
+  "homepage": "https://github.com/zoom/probesdk-web#readme",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "browser": "dist/index.umd.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "/docs",
+    "/dist",
+    "README.md",
+    "LICENSE.md"
+  ]
+}
