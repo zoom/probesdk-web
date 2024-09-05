@@ -686,7 +686,7 @@
   }
 
   var GLOBAL_SEQ = 1;
-  var KEY_RID = 'probing_rid';
+  var KEY_RID = "probing_rid";
   function base64ToBytes(base64) {
     var binString = atob(base64);
     return Uint8Array.from(binString, function (m) {
@@ -709,7 +709,7 @@
     return _connectWebSocket.apply(this, arguments);
   }
   function _connectWebSocket() {
-    _connectWebSocket = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(url) {
+    _connectWebSocket = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11(url) {
       return _regeneratorRuntime().wrap(function _callee11$(_context11) {
         while (1) switch (_context11.prev = _context11.next) {
           case 0:
@@ -790,17 +790,11 @@
       prober_instance.last_ul_network_level = app_score;
     }
   }
-  var ws_log = new WebSocket("ws://localhost:1234/echo/prober.receiver.txt");
   function wcl_trace_log(a, b) {
     var n = new Uint8Array(b + 1);
     var s = Module.HEAP8.subarray(a + 0, a + b);
     n.set(s, 0, b);
     n[b] = 10;
-    if (ws_log && ws_log.readyState == 1) {
-      var time = new Date();
-      ws_log.send(time.toString() + "  ");
-      ws_log.send(n);
-    }
   }
   var _NetworkProberInst_brand = /*#__PURE__*/new WeakSet();
   var NetworkProberInst = /*#__PURE__*/function () {
@@ -871,7 +865,7 @@
     return _createClass(NetworkProberInst, [{
       key: "connect",
       value: function () {
-        var _connect = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(timeout) {
+        var _connect = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(timeout) {
           var _this = this;
           var _data$result, jwtTokenUrl, tokenRsp, ridPart, rid, data, token, payload, hasGeoProbeConnected, geoProbeList, cmdChannelResult, _iterator, _step, geoProbe, cmdChannelUrl, _yield$this$getConnec, connectionId, index, mediaUrl, mediaChannelResult, isDataChannelEstablished;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
@@ -1082,7 +1076,7 @@
     }, {
       key: "startUplinkProbe",
       value: function () {
-        var _startUplinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var _startUplinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
           var count, interval, probeTime, prober_instance;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
@@ -1119,7 +1113,7 @@
     }, {
       key: "stopUplinkProbe",
       value: function () {
-        var _stopUplinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+        var _stopUplinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
           return _regeneratorRuntime().wrap(function _callee3$(_context3) {
             while (1) switch (_context3.prev = _context3.next) {
               case 0:
@@ -1141,7 +1135,7 @@
     }, {
       key: "startDownlinkProbe",
       value: function () {
-        var _startDownlinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        var _startDownlinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
           return _regeneratorRuntime().wrap(function _callee4$(_context4) {
             while (1) switch (_context4.prev = _context4.next) {
               case 0:
@@ -1162,7 +1156,7 @@
     }, {
       key: "stopDownlinkProbe",
       value: function () {
-        var _stopDownlinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
+        var _stopDownlinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
           var commandMessage;
           return _regeneratorRuntime().wrap(function _callee5$(_context5) {
             while (1) switch (_context5.prev = _context5.next) {
@@ -1184,7 +1178,7 @@
     }, {
       key: "connectWebTransport",
       value: function () {
-        var _connectWebTransport = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+        var _connectWebTransport = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
           var url, transport, writer, reader;
           return _regeneratorRuntime().wrap(function _callee6$(_context6) {
             while (1) switch (_context6.prev = _context6.next) {
@@ -1222,7 +1216,7 @@
     }, {
       key: "webTransportRead",
       value: function () {
-        var _webTransportRead = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(reader) {
+        var _webTransportRead = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7(reader) {
           var _yield$reader$read, value, done, probeData;
           return _regeneratorRuntime().wrap(function _callee7$(_context7) {
             while (1) switch (_context7.prev = _context7.next) {
@@ -1348,7 +1342,7 @@
     }, {
       key: "connectDataChannel",
       value: function () {
-        var _connectDataChannel = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(timeout) {
+        var _connectDataChannel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9(timeout) {
           var _this2 = this;
           return _regeneratorRuntime().wrap(function _callee9$(_context9) {
             while (1) switch (_context9.prev = _context9.next) {
@@ -1359,8 +1353,8 @@
                   _this2.api.readPackets(_this2.prober, probeData, ev.data.byteLength, true);
                 });
                 _context9.next = 4;
-                return this.videoPeer.createOffer().then( /*#__PURE__*/function () {
-                  var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(offer) {
+                return this.videoPeer.createOffer().then(/*#__PURE__*/function () {
+                  var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8(offer) {
                     var msg, data;
                     return _regeneratorRuntime().wrap(function _callee8$(_context8) {
                       while (1) switch (_context8.prev = _context8.next) {
@@ -1427,7 +1421,7 @@
     }, {
       key: "getConnectionId",
       value: function () {
-        var _getConnectionId = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+        var _getConnectionId = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
           var _this3 = this;
           return _regeneratorRuntime().wrap(function _callee10$(_context10) {
             while (1) switch (_context10.prev = _context10.next) {
@@ -2014,7 +2008,7 @@
     }, {
       key: "isWebGPUSupported",
       value: function () {
-        var _isWebGPUSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var _isWebGPUSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
           var isWebGPUAllowedOnTargetPlatforms, isChrome, isEdge, isOpera, isWebGPUAllowedOnTargetBrowsers, adapter, gpuDevice, adapterInfo, GPU_VENDOR_WHITELIST, index, canvas, gpuContext;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
@@ -2138,7 +2132,7 @@
     }, {
       key: "isVideoEncodingConfigSupported",
       value: function () {
-        var _isVideoEncodingConfigSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(config) {
+        var _isVideoEncodingConfigSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(config) {
           var isSupported;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
@@ -2168,7 +2162,7 @@
     }, {
       key: "isVideoDecodingConfigSupported",
       value: function () {
-        var _isVideoDecodingConfigSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(config) {
+        var _isVideoDecodingConfigSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(config) {
           var isSupported;
           return _regeneratorRuntime().wrap(function _callee3$(_context3) {
             while (1) switch (_context3.prev = _context3.next) {
@@ -2359,7 +2353,7 @@
     return _createClass(Reporter, [{
       key: "reportFeatures",
       value: function () {
-        var _reportFeatures = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var _reportFeatures = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
           var features, audioDenoiseFeature, audioEchoCancellationFeature, audioStereoFeature, virtualBgFeature, videoMaskFeature, webgpuFeature, videoSendHDFeature, videoSendFullHDFeature, video3x3GalleryViewFeature, video5x5GalleryViewFeature, screenSharingFeature;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
@@ -2405,7 +2399,7 @@
     }, {
       key: "reportBasicInfo",
       value: function () {
-        var _reportBasicInfo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
+        var _reportBasicInfo = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
           var userAgent, browserName, browserVersion, osName, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, basicInfoEntries;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
@@ -2723,7 +2717,7 @@
     return _reportVideoSendHDSupported2.apply(this, arguments);
   }
   function _reportVideoSendHDSupported2() {
-    _reportVideoSendHDSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+    _reportVideoSendHDSupported2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
       var checkList, hwConcurrency, isHwConcurrencySupported, hwConcurrencyEntry, isIPhoneOrIPadOS, isIPadOS, osReqEntry, isAmdGraphic, isVp9Codec, isAmdHwConcurrencySupported, hwReqEntry, isVideoFrameSupported, vfApiReqEntry;
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
@@ -2970,7 +2964,7 @@
           Module: Module
         }));
       }
-      Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+      Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
             case 0:
@@ -2980,8 +2974,8 @@
               if (wasmUrl != undefined && wasmUrl != "") {
                 locateFile(wasmUrl);
               }
-              _classPrivateFieldGet2(_networkProberInst, _this).connect(connectTimeout).then( /*#__PURE__*/function () {
-                var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(isConnected) {
+              _classPrivateFieldGet2(_networkProberInst, _this).connect(connectTimeout).then(/*#__PURE__*/function () {
+                var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(isConnected) {
                   var sendStopProbe, diagnosticReport;
                   return _regeneratorRuntime().wrap(function _callee2$(_context2) {
                     while (1) switch (_context2.prev = _context2.next) {
@@ -2997,7 +2991,7 @@
                         return _classPrivateFieldGet2(_networkProberInst, _this).startDownlinkProbe();
                       case 5:
                         sendStopProbe = /*#__PURE__*/function () {
-                          var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+                          var _ref3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
                             var diagnosticReport;
                             return _regeneratorRuntime().wrap(function _callee$(_context) {
                               while (1) switch (_context.prev = _context.next) {
@@ -3088,7 +3082,7 @@
     return _genDiagnosticReport2.apply(this, arguments);
   }
   function _genDiagnosticReport2() {
-    _genDiagnosticReport2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+    _genDiagnosticReport2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
       return _regeneratorRuntime().wrap(function _callee4$(_context4) {
         while (1) switch (_context4.prev = _context4.next) {
           case 0:
@@ -3292,7 +3286,7 @@
     return _createClass(WebGPURenderer, [{
       key: "preview",
       value: function () {
-        var _preview = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(source, target, viewport) {
+        var _preview = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(source, target, viewport) {
           var adapter, device, format, ctx, sampler, pipeline, resBundle;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
@@ -3502,7 +3496,7 @@
     return _createClass(Prober, [{
       key: "requestMediaDevicePermission",
       value: (function () {
-        var _requestMediaDevicePermission = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(constraints) {
+        var _requestMediaDevicePermission = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(constraints) {
           var mediaPmsResult;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
@@ -3565,7 +3559,7 @@
     }, {
       key: "requestMediaDevices",
       value: (function () {
-        var _requestMediaDevices = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var _requestMediaDevices = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
           var _navigator$mediaDevic;
           var mdResult, devices;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
@@ -3806,7 +3800,7 @@
     }, {
       key: "diagnoseVideo",
       value: (function () {
-        var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(constraints, options) {
+        var _diagnoseVideo = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(constraints, options) {
           var diagnosticResult, isRendererTypeSupported, isTypeCheckPass, areTypesCheckPass, rendersProxy;
           return _regeneratorRuntime().wrap(function _callee4$(_context4) {
             while (1) switch (_context4.prev = _context4.next) {
@@ -3870,8 +3864,8 @@
                 return _context4.abrupt("return", diagnosticResult);
               case 29:
                 rendersProxy = RenderersProxy.getInstance();
-                navigator.mediaDevices.getUserMedia(constraints).then( /*#__PURE__*/function () {
-                  var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(stream) {
+                navigator.mediaDevices.getUserMedia(constraints).then(/*#__PURE__*/function () {
+                  var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(stream) {
                     var video, viewport;
                     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
                       while (1) switch (_context3.prev = _context3.next) {
@@ -4172,12 +4166,12 @@
     return _isRendererTypeSupported2.apply(this, arguments);
   }
   function _isRendererTypeSupported2() {
-    _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
+    _isRendererTypeSupported2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
       return _regeneratorRuntime().wrap(function _callee6$(_context6) {
         while (1) switch (_context6.prev = _context6.next) {
           case 0:
-            return _context6.abrupt("return", new Promise( /*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
+            return _context6.abrupt("return", new Promise(/*#__PURE__*/function () {
+              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
                 var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
                 return _regeneratorRuntime().wrap(function _callee5$(_context5) {
                   while (1) switch (_context5.prev = _context5.next) {
