@@ -2829,6 +2829,281 @@ console.log(rid);</code></pre>
     
 
     
+    <h4 class="name" id="reportBasicInfo"><span class="type-signature">(async) </span>reportBasicInfo<span class="signature">(navigator)</span><span class="type-signature"> &rarr; {Promise.&lt;{Array.&lt;<a href="global.html#BasicInfoEntry">BasicInfoEntry</a>>}>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Report basic information of the target device, like browser information, OS, etc.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>navigator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the state and the identity of the user agent.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves to an array of basic information entries.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;{Array.&lt;<a href="global.html#BasicInfoEntry">BasicInfoEntry</a>>}></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>const reporter = new Reporter();
+reporter.reportBasicInfo(navigator).then((info) => {
+ console.log(JSON.stringify(info));
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reportFeatures"><span class="type-signature">(async) </span>reportFeatures<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;{Array.&lt;<a href="global.html#FeatureEntry">FeatureEntry</a>>}>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Report whether the advanced features are supported or not on the target device.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves to an array of advanced media features.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;{Array.&lt;<a href="global.html#FeatureEntry">FeatureEntry</a>>}></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>const reporter = new Reporter();
+reporter.reportFeatures().then((features) => {
+ console.log(JSON.stringify(features));
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="requestMediaDevicePermission"><span class="type-signature">(async) </span>requestMediaDevicePermission<span class="signature">(constraints)</span><span class="type-signature"> &rarr; {Promise.&lt;{stream: MediaStream, error: Error}>}</span></h4>
     
 
@@ -3736,6 +4011,125 @@ like removing the video element or the canvas on the screen.</p>
 
             
                 
+<h4 class="name" id="AffectedFeatureEntry">AffectedFeatureEntry</h4>
+
+
+
+
+<div class="description">
+    <p>An object describes an entry of an affected feature.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>featureName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the name of an affected feature.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
 <h4 class="name" id="BasicInfoEntry">BasicInfoEntry</h4>
 
 
@@ -3896,6 +4290,405 @@ like removing the video element or the canvas on the screen.</p>
             
 
             <td class="description last"><p>an array of affected features if the critical value is true, that is, a group of features might be affected if this attribute is not matched.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="BasicInfoEntry">BasicInfoEntry</h4>
+
+
+
+
+<div class="description">
+    <p>An object describes an entry of basic information.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>index</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>index of an attribute added to the basic information, refer to <a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>attr</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>name/label of an attribute.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>value of an attribute.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>critical</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>whether the attribute is critical or not. If true, the attribute is critical and a list of affected features will be attached to the affectedFeatures field.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>affectedFeatures</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="global.html#AffectedFeatureEntry">AffectedFeatureEntry</a>></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>an array of affected features if the critical value is true, that is, a group of features might be affected if this attribute is not matched.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="CheckItem">CheckItem</h4>
+
+
+
+
+<div class="description">
+    <p>An object describes an entry of a supported feature checking.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>index</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>indicates a classification of the requirement, sometimes this field can be ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>label</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the label of a requirement.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>matched</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>indicates whether a condition of the requirement is matched or not.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>tip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a tip will help if the condition is not matched.</p></td>
         </tr>
 
     
@@ -4391,6 +5184,194 @@ like removing the video element or the canvas on the screen.</p>
             
 
             <td class="description last"><p>an error message.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="FeatureEntry">FeatureEntry</h4>
+
+
+
+
+<div class="description">
+    <p>An object describes a piece of supported feature.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>index</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the index of a supported feature, refer to <a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>featureName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the name of a supported feature.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>isSupported</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>whether the feature is supported or not.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>checkList</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="global.html#CheckItem">CheckItem</a>></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>an array of <a href="global.html#CheckItem">CheckItem</a> which are used to judge whether the conditions of a supported features are matched or not.</p></td>
         </tr>
 
     
@@ -6528,13 +7509,13 @@ like removing the video element or the canvas on the screen.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Wed Aug 07 2024 16:28:50 GMT+0800 (China Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Thu Sep 12 2024 13:36:33 GMT+0800 (China Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

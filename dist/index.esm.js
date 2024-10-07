@@ -1,3 +1,5 @@
+import { UAParser } from 'ua-parser-js';
+
 function _arrayLikeToArray(r, a) {
   (null == a || a > r.length) && (a = r.length);
   for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
@@ -578,22 +580,23 @@ var BASIC_INFO_ATTR_INDEX = {
   BROWSER_NAME: 0,
   BROWSER_VERSION: 1,
   OS_NAME: 2,
-  USER_AGENT: 3,
-  HW_CONCURRENCY: 4,
-  GPU_VENDOR: 5,
-  GPU_RENDERER: 6,
-  VIDEOFRAME: 7,
-  OFFSCREENCANVAS: 8,
-  SIMD: 9,
-  WEB_CODEC: 10,
-  HW_ACC: 11,
-  GRAPHICS_ACC: 12,
-  MIN_BROWSER_VERSION: 13
+  OS_VERSION: 3,
+  USER_AGENT: 4,
+  HW_CONCURRENCY: 5,
+  GPU_VENDOR: 6,
+  GPU_RENDERER: 7,
+  VIDEOFRAME: 8,
+  OFFSCREENCANVAS: 9,
+  SIMD: 10,
+  WEB_CODEC: 11,
+  HW_ACC: 12,
+  GRAPHICS_ACC: 13,
+  MIN_BROWSER_VERSION: 14
 };
 
 /**
  * Enumeration of index of the supported features.
- * 
+ *
  * @enum {number}
  * @property {number} AUDIO_DENOISE feature index of audio denoise. Default value is 0.
  * @property {number} AEC feature index of audio echo cancellation. Default value is 1.
@@ -632,11 +635,11 @@ var DEF_PROBE_DURATION = 2 * 60 * 1000;
  */
 var DEF_CONNECT_TIMEOUT = 2 * 10 * 1000;
 var JWT_DOMAINS = {
-  PROD: 'zoom.us',
-  GO: 'go.zoom.us',
-  DEV: 'zoomdev.us',
-  DEV_EP: 'devep.zoomdev.us',
-  DEV_INT: 'dev-integration.zoomdev.us'
+  PROD: "zoom.us",
+  GO: "go.zoom.us",
+  DEV: "zoomdev.us",
+  DEV_EP: "devep.zoomdev.us",
+  DEV_INT: "dev-integration.zoomdev.us"
 };
 
 function checkType(obj, targetType) {
@@ -1644,6 +1647,325 @@ function formatTip(tipTemplate) {
   });
 }
 
+var _uaParser$3 = /*#__PURE__*/new WeakMap();
+var Browser$1 = /*#__PURE__*/function () {
+  function Browser(uaParser) {
+    _classCallCheck(this, Browser);
+    _classPrivateFieldInitSpec(this, _uaParser$3, null);
+    _classPrivateFieldSet2(_uaParser$3, this, uaParser);
+  }
+  return _createClass(Browser, [{
+    key: "getBrowserName",
+    value: function getBrowserName() {
+      return _classPrivateFieldGet2(_uaParser$3, this).getBrowser().name.toLowerCase();
+    }
+  }, {
+    key: "getBrowserVersion",
+    value: function getBrowserVersion() {
+      return _classPrivateFieldGet2(_uaParser$3, this).getBrowser().version;
+    }
+  }, {
+    key: "getBrowserMajorVersion",
+    value: function getBrowserMajorVersion() {
+      return _classPrivateFieldGet2(_uaParser$3, this).getBrowser().major;
+    }
+  }, {
+    key: "isChrome",
+    value: function isChrome() {
+      return this.getBrowserName().includes("chrome");
+    }
+  }, {
+    key: "isEdge",
+    value: function isEdge() {
+      return this.getBrowserName().includes("edge");
+    }
+  }, {
+    key: "isOpera",
+    value: function isOpera() {
+      return this.getBrowserName().includes("opera");
+    }
+  }, {
+    key: "isFirefox",
+    value: function isFirefox() {
+      return this.getBrowserName().includes("firefox");
+    }
+  }, {
+    key: "isChromium",
+    value: function isChromium() {
+      if (this.getBrowserName() === "chrome") {
+        var _navigator$userAgentD;
+        if ((_navigator$userAgentD = navigator.userAgentData) !== null && _navigator$userAgentD !== void 0 && _navigator$userAgentD.brands) {
+          var _isChromium = navigator.userAgentData.brands.some(function (brand) {
+            return brand.brand === "Chromium";
+          });
+          return _isChromium;
+        }
+      }
+      return false;
+    }
+  }, {
+    key: "isSafari",
+    value: function isSafari() {
+      return this.getBrowserName().includes("safari");
+    }
+  }, {
+    key: "isChromiumBasedBrowser",
+    value: function isChromiumBasedBrowser() {
+      return this.isChrome() || this.isChromium() || this.isEdge() || this.isOpera();
+    }
+  }, {
+    key: "isChromeVersionHigherThan",
+    value: function isChromeVersionHigherThan(version) {
+      if (this.isChrome()) {
+        return Browser.compareBrowserVersion(this.getBrowserVersion(), version);
+      }
+      return false;
+    }
+  }, {
+    key: "isChromiumBasedBrowserVersionHigherThan",
+    value: function isChromiumBasedBrowserVersionHigherThan(version) {
+      if (this.isChromiumBasedBrowser()) {
+        return Browser.compareBrowserVersion(this.getBrowserVersion(), version);
+      }
+      return false;
+    }
+  }, {
+    key: "isFirefoxVersionHigherThan",
+    value: function isFirefoxVersionHigherThan(version) {
+      if (this.isFirefox()) {
+        return Browser.compareBrowserVersion(this.getBrowserVersion(), version);
+      }
+      return false;
+    }
+  }, {
+    key: "isSafariVersionHigherThan",
+    value: function isSafariVersionHigherThan(version) {
+      if (this.isSafari()) {
+        return Browser.compareBrowserVersion(this.getBrowserVersion(), version);
+      }
+      return false;
+    }
+  }], [{
+    key: "compareBrowserVersion",
+    value: function compareBrowserVersion(browserVersion, comparedVersion) {
+      if (!browserVersion || !comparedVersion) {
+        throw new Error("compareBrowserVersion() invalid parameters!");
+      }
+      var browserVersionArray = browserVersion.toString().split(".").map(Number);
+      var comparedVersionArray = comparedVersion.toString().split(".").map(Number);
+      var maxLength = Math.max(browserVersionArray.length, comparedVersionArray.length);
+      for (var i = 0; i < maxLength; i++) {
+        var _browser = browserVersionArray[i] || 0;
+        var _compared = comparedVersionArray[i] || 0;
+        if (_browser !== _compared) {
+          return _browser > _compared;
+        }
+      }
+      return browserVersion >= comparedVersion;
+    }
+  }]);
+}();
+
+var _uaParser$2 = /*#__PURE__*/new WeakMap();
+var _detector = /*#__PURE__*/new WeakMap();
+var OS$1 = /*#__PURE__*/function () {
+  function OS(uaParser) {
+    _classCallCheck(this, OS);
+    _classPrivateFieldInitSpec(this, _uaParser$2, null);
+    _classPrivateFieldInitSpec(this, _detector, null);
+    _classPrivateFieldSet2(_uaParser$2, this, uaParser);
+  }
+  return _createClass(OS, [{
+    key: "setDetector",
+    value: function setDetector(detector) {
+      _classPrivateFieldSet2(_detector, this, detector);
+    }
+  }, {
+    key: "getOSName",
+    value: function getOSName() {
+      return _classPrivateFieldGet2(_uaParser$2, this).getOS().name;
+    }
+  }, {
+    key: "getOSVersion",
+    value: function getOSVersion() {
+      return _classPrivateFieldGet2(_uaParser$2, this).getOS().version;
+    }
+  }, {
+    key: "isChromeOS",
+    value: function isChromeOS() {
+      var _os = this.getOSName().toLowerCase();
+      return _os === "chromium os" || _os === "chrome os";
+    }
+  }, {
+    key: "isAndroid",
+    value: function isAndroid() {
+      var _os = this.getOSName().toLowerCase();
+      if (_os === "android") {
+        return true;
+      } else {
+        if (_os.includes("linux")) {
+          var isTablet = _classPrivateFieldGet2(_detector, this).getDevice().isTablet(navigator);
+          var isMobileDevice = _classPrivateFieldGet2(_detector, this).getDevice().isMobileDevice(navigator);
+          if (isTablet || isMobileDevice) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  }, {
+    key: "is_iOS",
+    value: function is_iOS() {
+      var _os = this.getOSName().toLowerCase();
+      if (_os === "ios") {
+        return true;
+      } else {
+        if (_os.includes("mac")) {
+          var isTablet = _classPrivateFieldGet2(_detector, this).getDevice().isTablet(navigator);
+          var isMobileDevice = _classPrivateFieldGet2(_detector, this).getDevice().isMobileDevice(navigator);
+          if (isTablet || isMobileDevice) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  }]);
+}();
+
+var _uaParser$1 = /*#__PURE__*/new WeakMap();
+var _deviceHighEntropyValues = /*#__PURE__*/new WeakMap();
+var Device = /*#__PURE__*/function () {
+  function Device(uaParser) {
+    var _this = this;
+    _classCallCheck(this, Device);
+    _classPrivateFieldInitSpec(this, _uaParser$1, null);
+    _classPrivateFieldInitSpec(this, _deviceHighEntropyValues, null);
+    _classPrivateFieldSet2(_uaParser$1, this, uaParser);
+    if (navigator && navigator.userAgentData) {
+      navigator.userAgentData.getHighEntropyValues(["model"]).then(function (values) {
+        _classPrivateFieldSet2(_deviceHighEntropyValues, _this, values);
+      });
+    }
+  }
+  return _createClass(Device, [{
+    key: "getDeviceModel",
+    value: function getDeviceModel() {
+      var deviceModel = "";
+      if (_classPrivateFieldGet2(_deviceHighEntropyValues, this)) {
+        if (_classPrivateFieldGet2(_deviceHighEntropyValues, this).model && _classPrivateFieldGet2(_deviceHighEntropyValues, this).model !== "") {
+          deviceModel = _classPrivateFieldGet2(_deviceHighEntropyValues, this).model;
+        }
+      } else {
+        var _classPrivateFieldGet2$1;
+        deviceModel = ((_classPrivateFieldGet2$1 = _classPrivateFieldGet2(_uaParser$1, this).device) === null || _classPrivateFieldGet2$1 === void 0 ? void 0 : _classPrivateFieldGet2$1.model) || "";
+      }
+      return deviceModel;
+    }
+  }, {
+    key: "getDeviceType",
+    value: function getDeviceType() {
+      return _classPrivateFieldGet2(_uaParser$1, this).getDevice().type || "";
+    }
+  }, {
+    key: "getDeviceVendor",
+    value: function getDeviceVendor() {
+      return _classPrivateFieldGet2(_uaParser$1, this).getDevice().vendor || "";
+    }
+  }, {
+    key: "getCPUArch",
+    value: function getCPUArch() {
+      var _classPrivateFieldGet3;
+      return ((_classPrivateFieldGet3 = _classPrivateFieldGet2(_uaParser$1, this).getCPU()) === null || _classPrivateFieldGet3 === void 0 ? void 0 : _classPrivateFieldGet3.architecture) || "";
+    }
+  }, {
+    key: "isTablet",
+    value: function isTablet() {
+      var _window, _window2;
+      if (this.getDeviceType() === "tablet") {
+        return true;
+      }
+      if (!navigator) {
+        return false;
+      }
+      var userAgent = (navigator.userAgent || "").toLowerCase();
+      var tabletRegex = /ipad|android(?!.*mobile)|tablet/i;
+      if (tabletRegex.test(userAgent)) {
+        return true;
+      }
+      var minTabletWidth = 600;
+      var maxTabletWidth = 1280;
+      var screenWidth = Math.min(((_window = window) === null || _window === void 0 || (_window = _window.screen) === null || _window === void 0 ? void 0 : _window.width) || 0, ((_window2 = window) === null || _window2 === void 0 || (_window2 = _window2.screen) === null || _window2 === void 0 ? void 0 : _window2.height) || 0);
+      var hasTouchSupport = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      return screenWidth >= minTabletWidth && screenWidth <= maxTabletWidth && hasTouchSupport;
+    }
+  }, {
+    key: "isMobileDevice",
+    value: function isMobileDevice() {
+      var _window3, _window4;
+      if (this.getDeviceType() === "mobile") {
+        return true;
+      }
+      if (!navigator || !navigator.userAgent || navigator.userAgent.length < 1) {
+        return false;
+      }
+      if (navigator.userAgentData) {
+        if (!!navigator.userAgentData.mobile) {
+          return true;
+        }
+      }
+      if (navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/webOS/i) || navigator.userAgent.match(/iPhone/i) || navigator.userAgent.match(/iPod/i) || navigator.userAgent.match(/BlackBerry/i) || navigator.userAgent.match(/Windows Phone/i)) {
+        return true;
+      }
+      var minMobileWidth = 200;
+      var maxMobileWidth = 600;
+      var screenWidth = Math.min(((_window3 = window) === null || _window3 === void 0 || (_window3 = _window3.screen) === null || _window3 === void 0 ? void 0 : _window3.width) || 0, ((_window4 = window) === null || _window4 === void 0 || (_window4 = _window4.screen) === null || _window4 === void 0 ? void 0 : _window4.height) || 0);
+      var hasTouchSupport = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      return screenWidth >= minMobileWidth && screenWidth < maxMobileWidth && hasTouchSupport;
+    }
+  }]);
+}();
+
+var _uaParser = /*#__PURE__*/new WeakMap();
+var _browser = /*#__PURE__*/new WeakMap();
+var _os = /*#__PURE__*/new WeakMap();
+var _device = /*#__PURE__*/new WeakMap();
+var Detector = /*#__PURE__*/function () {
+  function Detector() {
+    _classCallCheck(this, Detector);
+    _classPrivateFieldInitSpec(this, _uaParser, null);
+    _classPrivateFieldInitSpec(this, _browser, null);
+    _classPrivateFieldInitSpec(this, _os, null);
+    _classPrivateFieldInitSpec(this, _device, null);
+    if (Detector.instance) {
+      return Detector.instance;
+    }
+    _classPrivateFieldSet2(_uaParser, this, new UAParser(navigator.userAgent));
+    _classPrivateFieldSet2(_browser, this, new Browser$1(_classPrivateFieldGet2(_uaParser, this)));
+    _classPrivateFieldSet2(_os, this, new OS$1(_classPrivateFieldGet2(_uaParser, this)));
+    _classPrivateFieldGet2(_os, this).setDetector(this);
+    _classPrivateFieldSet2(_device, this, new Device(_classPrivateFieldGet2(_uaParser, this)));
+    Detector.instance = this;
+  }
+  return _createClass(Detector, [{
+    key: "getBrowser",
+    value: function getBrowser() {
+      return _classPrivateFieldGet2(_browser, this);
+    }
+  }, {
+    key: "getOS",
+    value: function getOS() {
+      return _classPrivateFieldGet2(_os, this);
+    }
+  }, {
+    key: "getDevice",
+    value: function getDevice() {
+      return _classPrivateFieldGet2(_device, this);
+    }
+  }]);
+}();
+var DETECTOR = new Detector();
+
 var Browser = /*#__PURE__*/function () {
   function Browser() {
     _classCallCheck(this, Browser);
@@ -1685,22 +2007,26 @@ var Browser = /*#__PURE__*/function () {
   }, {
     key: "getBrowserName",
     value: function getBrowserName(navigator) {
-      var ua = navigator.userAgent.toLowerCase();
-      if (isInUserAgent(ua, "edge", "edg", "edgios")) {
-        return "Edge";
-      } else if (isInUserAgent(ua, "opera", "opr") && !!window.opr) {
-        return "Opera";
-      } else if (isInUserAgent(ua, "chrome", "crios", "crmo") && !!window.chrome) {
-        return "Chrome";
-      } else if (isInUserAgent(ua, "trident", "msie")) {
-        return "IE";
-      } else if (isInUserAgent(ua, "firefox", "iceweasel", "fxios")) {
-        return "Firefox";
-      } else if (isInUserAgent(ua, "safari")) {
-        return "Safari";
-      } else {
-        return "Unknown";
+      var name = DETECTOR.getBrowser().getBrowserName();
+      if (!name) {
+        var ua = navigator.userAgent.toLowerCase();
+        if (isInUserAgent(ua, "edge", "edg", "edgios")) {
+          name = "Edge";
+        } else if (isInUserAgent(ua, "opera", "opr") && !!window.opr) {
+          name = "Opera";
+        } else if (isInUserAgent(ua, "chrome", "crios", "crmo") && !!window.chrome) {
+          name = "Chrome";
+        } else if (isInUserAgent(ua, "trident", "msie")) {
+          name = "IE";
+        } else if (isInUserAgent(ua, "firefox", "iceweasel", "fxios")) {
+          name = "Firefox";
+        } else if (isInUserAgent(ua, "safari")) {
+          name = "Safari";
+        } else {
+          name = "Unknown";
+        }
       }
+      return name;
     }
   }, {
     key: "isEdge",
@@ -1795,10 +2121,15 @@ var Browser = /*#__PURE__*/function () {
   }, {
     key: "getBrowserVersion",
     value: function getBrowserVersion(navigator) {
-      var ua = navigator.userAgent.toLowerCase();
-      var s;
-      (s = ua.match(/rv:([\d.]+)\) like gecko/)) ? s[1] : (s = ua.match(/msie ([\d\.]+)/)) ? s[1] : (s = ua.match(/(?:edge|edgios)\/([\d\.]+)/)) ? s[1] : (s = ua.match(/(?:firefox|iceweasel|fxios)\/([\d\.]+)/)) ? s[1] : (s = ua.match(/(?:opera|opr).([\d\.]+)/)) ? s[1] : (s = ua.match(/(?:chrome|crios|crmo)\/([\d\.]+)/)) ? s[1] : (s = ua.match(/version\/([\d\.]+).*safari/)) ? s[1] : 0;
-      return s[1];
+      var version = DETECTOR.getBrowser().getBrowserVersion();
+      if (!version) {
+        var browserVersion = {};
+        var ua = navigator.userAgent.toLowerCase();
+        var s;
+        (s = ua.match(/rv:([\d.]+)\) like gecko/)) ? browserVersion.ie = s[1] : (s = ua.match(/msie ([\d\.]+)/)) ? browserVersion.ie = s[1] : (s = ua.match(/(?:edge|edgios)\/([\d\.]+)/)) ? browserVersion.edge = s[1] : (s = ua.match(/(?:firefox|iceweasel|fxios)\/([\d\.]+)/)) ? browserVersion.firefox = s[1] : (s = ua.match(/(?:opera|opr).([\d\.]+)/)) ? browserVersion.opera = s[1] : (s = ua.match(/(?:chrome|crios|crmo)\/([\d\.]+)/)) ? browserVersion.chrome = s[1] : (s = ua.match(/version\/([\d\.]+).*safari/)) ? browserVersion.safari = s[1] : 0;
+        version = s[1];
+      }
+      return version;
     }
   }]);
 }();
@@ -1907,23 +2238,36 @@ var OS = /*#__PURE__*/function () {
   }, {
     key: "getOSName",
     value: function getOSName(navigator) {
-      if (OS.isWindowsOS(navigator)) {
-        return "Windows";
-      } else if (OS.isMacOS(navigator)) {
-        return "Mac";
-      } else if (OS.isAndroid(navigator)) {
-        return "Android";
-      } else if (OS.isChromeOS(navigator)) {
-        return "ChromeOS";
-      } else if (OS.isLinuxOS(navigator)) {
-        return "Linux";
-      } else if (OS.isiPadOS(navigator)) {
-        return "iPad";
-      } else if (OS.is_iOS(navigator)) {
-        return "iOS";
-      } else {
-        return "Unknown";
+      var name = DETECTOR.getOS().getOSName();
+      if (!name) {
+        if (OS.isWindowsOS(navigator)) {
+          name = "Windows";
+        } else if (OS.isMacOS(navigator)) {
+          name = "Mac";
+        } else if (OS.isAndroid(navigator)) {
+          name = "Android";
+        } else if (OS.isChromeOS(navigator)) {
+          name = "ChromeOS";
+        } else if (OS.isLinuxOS(navigator)) {
+          name = "Linux";
+        } else if (OS.isiPadOS(navigator)) {
+          name = "iPad";
+        } else if (OS.is_iOS(navigator)) {
+          name = "iOS";
+        } else {
+          name = "Unknown";
+        }
       }
+      return name;
+    }
+  }, {
+    key: "getOSVersion",
+    value: function getOSVersion() {
+      var version = DETECTOR.getOS().getOSVersion();
+      if (!version) {
+        version = "unknown";
+      }
+      return version;
     }
   }]);
 }();
@@ -2338,15 +2682,84 @@ var Hardware = /*#__PURE__*/function () {
   }]);
 }();
 
+/**
+ * In video conferencing, we provide a lot of basic and advanced features for the conference service,
+ * these features depend on the participant's hardware condition, system condition and browser condition.
+ * Therefore, Reporter provides detection services for when these features are supported on the target device
+ * to provide a better experience. At the same time, the diagnosis of the basic information of the device
+ * can also help us better solve the user's problem more quickly.
+ *
+ * @since 1.0.0
+ * @author clever.su@zoom.us
+ *
+ * @example
+ * import { Reporter } from "@zoom/probesdk";
+ * const reporter = new Reporter();
+ * reporter.reportFeatures().then((features) => {
+ *  console.log(JSON.stringify(features));
+ * });
+ */
 var _Reporter_brand = /*#__PURE__*/new WeakSet();
 var Reporter = /*#__PURE__*/function () {
   function Reporter() {
     _classCallCheck(this, Reporter);
     _classPrivateMethodInitSpec(this, _Reporter_brand);
   }
+
+  /**
+   * An object describes an entry of an affected feature.
+   *
+   * @typedef {object} AffectedFeatureEntry
+   * @property {string} featureName the name of an affected feature.
+   */
+
+  /**
+   * An object describes an entry of basic information.
+   *
+   * @typedef {object} BasicInfoEntry
+   * @property {number} index index of an attribute added to the basic information, refer to {@link BASIC_INFO_ATTR_INDEX}.
+   * @property {string} attr name/label of an attribute.
+   * @property {string} val value of an attribute.
+   * @property {boolean} critical whether the attribute is critical or not. If true, the attribute is critical and a list of affected features will be attached to the affectedFeatures field.
+   * @property {Array<AffectedFeatureEntry>} affectedFeatures an array of affected features if the {@link critical} value is true, that is, a group of features might be affected if this attribute is not matched.
+   */
+
+  /**
+   * An object describes an entry of a supported feature checking.
+   *
+   * @typedef {object} CheckItem
+   * @property {number} index indicates a classification of the requirement, sometimes this field can be ignored.
+   * @property {string} label the label of a requirement.
+   * @property {boolean} matched indicates whether a condition of the requirement is matched or not.
+   * @property {string} tip a tip will help if the condition is not {@link matched}.
+   */
+
+  /**
+   * An object describes a piece of supported feature.
+   *
+   * @typedef {object} FeatureEntry
+   * @property {number} index the index of a supported feature, refer to {@link SUPPORTED_FEATURE_INDEX}.
+   * @property {string} featureName the name of a supported feature.
+   * @property {boolean} isSupported whether the feature is supported or not.
+   * @property {Array<CheckItem>} checkList an array of {@link CheckItem} which are used to judge whether the conditions of a supported features are matched or not.
+   */
+
+  /**
+   * Report whether the advanced features are supported or not on the target device.
+   *
+   * @async
+   * @function reportFeatures
+   * @returns {Promise<{Array<FeatureEntry>}>} A promise that resolves to an array of advanced media features.
+   *
+   * @example
+   * const reporter = new Reporter();
+   * reporter.reportFeatures().then((features) => {
+   *  console.log(JSON.stringify(features));
+   * });
+   */
   return _createClass(Reporter, [{
     key: "reportFeatures",
-    value: function () {
+    value: (function () {
       var _reportFeatures = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var features, audioDenoiseFeature, audioEchoCancellationFeature, audioStereoFeature, virtualBgFeature, videoMaskFeature, webgpuFeature, videoSendHDFeature, videoSendFullHDFeature, video3x3GalleryViewFeature, video5x5GalleryViewFeature, screenSharingFeature;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
@@ -2390,11 +2803,26 @@ var Reporter = /*#__PURE__*/function () {
       }
       return reportFeatures;
     }()
+    /**
+     * Report basic information of the target device, like browser information, OS, etc.
+     *
+     * @async
+     * @function reportBasicInfo
+     * @param {object} navigator the state and the identity of the user agent.
+     * @returns {Promise<{Array<BasicInfoEntry>}>} A promise that resolves to an array of basic information entries.
+     *
+     * @example
+     * const reporter = new Reporter();
+     * reporter.reportBasicInfo(navigator).then((info) => {
+     *  console.log(JSON.stringify(info));
+     * });
+     */
+    )
   }, {
     key: "reportBasicInfo",
-    value: function () {
+    value: (function () {
       var _reportBasicInfo = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
-        var userAgent, browserName, browserVersion, osName, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, basicInfoEntries;
+        var userAgent, browserName, browserVersion, osName, osVersion, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, basicInfoEntries;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
@@ -2402,7 +2830,8 @@ var Reporter = /*#__PURE__*/function () {
               userAgent = Browser.getUserAgent(navigator);
               browserName = Browser.getBrowserName(navigator);
               browserVersion = Browser.getBrowserVersion(navigator); // OS information
-              osName = OS.getOSName(navigator); // Min browser version for a better experience
+              osName = OS.getOSName(navigator);
+              osVersion = OS.getOSVersion(); // Min browser version for a better experience
               minVersion = _assertClassBrand(_Reporter_brand, this, _getMiniumBrowserVersion).call(this, osName, browserName); // Hardware information
               hardwareConcurrency = Hardware.getHardwareConcurrency(navigator);
               gpuInfo = Hardware.getGPUInfo();
@@ -2426,9 +2855,9 @@ var Reporter = /*#__PURE__*/function () {
                 bitrateMode: "constant",
                 scalabilityMode: "L1T2"
               };
-              _context2.next = 16;
+              _context2.next = 17;
               return Feature.isVideoEncodingConfigSupported(encoding_config);
-            case 16:
+            case 17:
               encodingResult = _context2.sent;
               isEncodingSupported = false;
               if (encodingResult) {
@@ -2442,9 +2871,9 @@ var Reporter = /*#__PURE__*/function () {
                 codedHeight: 720,
                 hardwareAcceleration: "prefer-hardware"
               };
-              _context2.next = 23;
+              _context2.next = 24;
               return Feature.isVideoDecodingConfigSupported(decoding_config);
-            case 23:
+            case 24:
               decodingResult = _context2.sent;
               isDecodingSupported = false;
               if (decodingResult) {
@@ -2466,6 +2895,12 @@ var Reporter = /*#__PURE__*/function () {
                 index: BASIC_INFO_ATTR_INDEX.OS_NAME,
                 attr: "OS",
                 val: osName,
+                critical: false,
+                affectedFeatures: []
+              }, {
+                index: BASIC_INFO_ATTR_INDEX.OS_VERSION,
+                attr: "OS Version",
+                val: osVersion,
                 critical: false,
                 affectedFeatures: []
               }, {
@@ -2576,7 +3011,7 @@ var Reporter = /*#__PURE__*/function () {
                 }]
               }];
               return _context2.abrupt("return", basicInfoEntries);
-            case 28:
+            case 29:
             case "end":
               return _context2.stop();
           }
@@ -2586,7 +3021,7 @@ var Reporter = /*#__PURE__*/function () {
         return _reportBasicInfo.apply(this, arguments);
       }
       return reportBasicInfo;
-    }()
+    }())
   }]);
 }();
 function _genReportEntry(index) {
@@ -2795,13 +3230,13 @@ function _getMiniumBrowserVersion(osName, browserName) {
   if (osName === "" || browserName === "") {
     return "0";
   }
-  if (osName === "Windows") {
+  if (osName.toLowerCase().includes("windows")) {
     if (browserName === "chrome" || browserName === "edge" || browserName === "chromium based edge (dev or canary)") {
       return "102";
     } else if (browserName === "firefox") {
       return "105";
     }
-  } else if (osName === "Mac") {
+  } else if (osName.toLowerCase().includes("mac")) {
     if (browserName === "chrome" || browserName === "edge" || browserName === "chromium based edge (dev or canary)") {
       return "102";
     } else if (browserName === "firefox") {
@@ -2809,19 +3244,19 @@ function _getMiniumBrowserVersion(osName, browserName) {
     } else if (browserName === "safari") {
       return "16.4";
     }
-  } else if (osName === "Linux") {
+  } else if (osName.toLowerCase().includes("linux") || osName.toLowerCase().includes("ubuntu")) {
     if (browserName === "chrome" || browserName === "edge" || browserName === "chromium based edge (dev or canary)") {
       return "102";
     } else if (browserName === "firefox") {
       return "105";
     }
-  } else if (osName === "ChromeOS") {
+  } else if (osName.toLowerCase().includes("chrome os") || osName.toLowerCase().includes("chromium os")) {
     return "102";
-  } else if (osName === "Android") {
+  } else if (osName.toLowerCase().includes("android")) {
     if (browserName === "chrome" || browserName === "edge" || browserName === "chromium based edge (dev or canary)") {
       return "102";
     }
-  } else if (osName === "iOS") {
+  } else if (osName.toLowerCase().includes("ios")) {
     if (browserName === "chrome" || browserName === "edge" || browserName === "chromium based edge (dev or canary)") {
       return "15.0";
     } else if (browserName === "safari") {
@@ -3117,11 +3552,15 @@ function _isValidJWTDomain(domain) {
   return domain === JWT_DOMAINS.PROD || domain === JWT_DOMAINS.GO || domain === JWT_DOMAINS.DEV || domain === JWT_DOMAINS.DEV_EP || domain === JWT_DOMAINS.DEV_INT;
 }
 
+var _handle$2 = /*#__PURE__*/new WeakMap();
+var _isPreviewStarted = /*#__PURE__*/new WeakMap();
 var _WebGLRenderer_brand = /*#__PURE__*/new WeakSet();
 var WebGLRenderer = /*#__PURE__*/function () {
   function WebGLRenderer() {
     _classCallCheck(this, WebGLRenderer);
     _classPrivateMethodInitSpec(this, _WebGLRenderer_brand);
+    _classPrivateFieldInitSpec(this, _handle$2, -1);
+    _classPrivateFieldInitSpec(this, _isPreviewStarted, false);
   }
   return _createClass(WebGLRenderer, [{
     key: "preview",
@@ -3144,6 +3583,15 @@ var WebGLRenderer = /*#__PURE__*/function () {
         viewport: viewport,
         source: source
       });
+      _classPrivateFieldSet2(_isPreviewStarted, this, true);
+    }
+  }, {
+    key: "stopPreview",
+    value: function stopPreview() {
+      _classPrivateFieldSet2(_isPreviewStarted, this, false);
+      if (_classPrivateFieldGet2(_handle$2, this) != -1) {
+        cancelAnimationFrame(_classPrivateFieldGet2(_handle$2, this));
+      }
     }
   }, {
     key: "frame",
@@ -3164,9 +3612,9 @@ var WebGLRenderer = /*#__PURE__*/function () {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       resBundle.glContext.drawArrays(resBundle.glContext.TRIANGLE_STRIP, 0, 4);
-      requestAnimationFrame(function () {
+      _classPrivateFieldSet2(_handle$2, this, requestAnimationFrame(function () {
         return _this.frame(resBundle);
-      });
+      }));
     }
   }]);
 }();
@@ -3195,11 +3643,13 @@ function _createBuffer$1(gl) {
 _defineProperty(WebGLRenderer, "VERTEX_SHADER", /* glsl */"\n    attribute vec2 position;\n    varying vec2 texCoord;\n\n    void main() {\n      texCoord = (position + 1.0) * 0.5;\n      // gl_Position = vec4(position, 0.0, 1.0);\n      gl_Position = vec4(position.x, -position.y, 0.0, 1.0);\n    }\n  ");
 _defineProperty(WebGLRenderer, "FRAGMENT_SHADER", /* glsl */"\n    precision mediump float;\n    varying vec2 texCoord;\n    uniform sampler2D videoTexture;\n\n    void main() {\n      gl_FragColor = texture2D(videoTexture, texCoord);\n    }\n  ");
 
+var _handle$1 = /*#__PURE__*/new WeakMap();
 var _WebGL2Renderer_brand = /*#__PURE__*/new WeakSet();
 var WebGL2Renderer = /*#__PURE__*/function () {
   function WebGL2Renderer() {
     _classCallCheck(this, WebGL2Renderer);
     _classPrivateMethodInitSpec(this, _WebGL2Renderer_brand);
+    _classPrivateFieldInitSpec(this, _handle$1, -1);
   }
   return _createClass(WebGL2Renderer, [{
     key: "preview",
@@ -3224,6 +3674,13 @@ var WebGL2Renderer = /*#__PURE__*/function () {
       });
     }
   }, {
+    key: "stopPreview",
+    value: function stopPreview() {
+      if (_classPrivateFieldGet2(_handle$1, this) != -1) {
+        cancelAnimationFrame(_classPrivateFieldGet2(_handle$1, this));
+      }
+    }
+  }, {
     key: "frame",
     value: function frame(resBundle) {
       var _this = this;
@@ -3242,9 +3699,9 @@ var WebGL2Renderer = /*#__PURE__*/function () {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       resBundle.glContext.drawArrays(resBundle.glContext.TRIANGLE_STRIP, 0, 4);
-      requestAnimationFrame(function () {
+      _classPrivateFieldSet2(_handle$1, this, requestAnimationFrame(function () {
         return _this.frame(resBundle);
-      });
+      }));
     }
   }]);
 }();
@@ -3273,9 +3730,11 @@ function _createBuffer(gl) {
 _defineProperty(WebGL2Renderer, "VERTEX_SHADER", /* glsl */"#version 300 es\n    in vec2 position;\n    out vec2 texCoord;\n\n    void main() {\n      texCoord = (position + 1.0) * 0.5;\n      gl_Position = vec4(position.x, -position.y, 0.0, 1.0);\n    }\n  ");
 _defineProperty(WebGL2Renderer, "FRAGMENT_SHADER", /* glsl */"#version 300 es\n    precision mediump float;\n    in vec2 texCoord;\n    uniform sampler2D videoTexture;\n    out vec4 fragColor;\n\n    void main() {\n      fragColor = texture(videoTexture, texCoord);\n    }\n  ");
 
+var _handle = /*#__PURE__*/new WeakMap();
 var WebGPURenderer = /*#__PURE__*/function () {
   function WebGPURenderer() {
     _classCallCheck(this, WebGPURenderer);
+    _classPrivateFieldInitSpec(this, _handle, -1);
   }
   return _createClass(WebGPURenderer, [{
     key: "preview",
@@ -3349,6 +3808,13 @@ var WebGPURenderer = /*#__PURE__*/function () {
       return preview;
     }()
   }, {
+    key: "stopPreview",
+    value: function stopPreview() {
+      if (_classPrivateFieldGet2(_handle, this) != -1) {
+        cancelAnimationFrame(_classPrivateFieldGet2(_handle, this));
+      }
+    }
+  }, {
     key: "frame",
     value: function frame(resBundle) {
       var _this = this;
@@ -3380,9 +3846,9 @@ var WebGPURenderer = /*#__PURE__*/function () {
       passEncoder.draw(6);
       passEncoder.end();
       resBundle.device.queue.submit([commandEncoder.finish()]);
-      requestAnimationFrame(function () {
+      _classPrivateFieldSet2(_handle, this, requestAnimationFrame(function () {
         return _this.frame(resBundle);
-      });
+      }));
     }
   }]);
 }();
@@ -3391,9 +3857,11 @@ _defineProperty(WebGPURenderer, "VERTEX_SHADER", /* wgsl */"\n    struct VertexO
 // Samples the external texture using generated UVs.
 _defineProperty(WebGPURenderer, "FRAG_SHADER_VF", /* wgsl */"\n    @group(0) @binding(0) var mySampler: sampler;\n    @group(0) @binding(1) var vfTexture: texture_external;\n\n    @fragment\n    fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {\n      var color0: vec4<f32> = textureSampleBaseClampToEdge(vfTexture, mySampler, uv);\n      return color0;\n    }\n  ");
 
+var _mRenderer = /*#__PURE__*/new WeakMap();
 var RenderersProxy = /*#__PURE__*/function () {
   function RenderersProxy() {
     _classCallCheck(this, RenderersProxy);
+    _classPrivateFieldInitSpec(this, _mRenderer, null);
   }
   return _createClass(RenderersProxy, [{
     key: "preview",
@@ -3415,6 +3883,9 @@ var RenderersProxy = /*#__PURE__*/function () {
         renderer = new WebGPURenderer();
         renderer.preview(source, target, viewport);
       }
+
+      // save renderer
+      _classPrivateFieldSet2(_mRenderer, this, renderer);
     }
   }, {
     key: "stopPreview",
@@ -3432,6 +3903,10 @@ var RenderersProxy = /*#__PURE__*/function () {
         track.stop();
         options.stream.removeTrack(track);
       });
+      if (_classPrivateFieldGet2(_mRenderer, this)) {
+        _classPrivateFieldGet2(_mRenderer, this).stopPreview();
+      }
+      _classPrivateFieldSet2(_mRenderer, this, null);
       return true;
     }
   }], [{
