@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Prober</title>
+    <title>JSDoc: Class: Reporter</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Prober</h1>
+    <h1 class="page-title">Class: Reporter</h1>
 
     
 
@@ -28,11 +28,13 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>Prober<span class="signature">()</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>Reporter<span class="signature">()</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>Prober provides the capabilities of requesting the media permissions and devices,
-diagnosing the devices and network, and reporting the diagnostic result, etc. It's easy
-to create an instance of Prober class and use it to implement your own probing requirements.</p></div>
+            <div class="class-description"><p>In video conferencing, we provide a lot of basic and advanced features for the conference service,
+these features depend on the participant's hardware condition, system condition and browser condition.
+Therefore, Reporter provides detection services for when these features are supported on the target device
+to provide a better experience. At the same time, the diagnosis of the basic information of the device
+can also help us better solve the user's problem more quickly.</p></div>
         
     
 </header>
@@ -47,7 +49,7 @@ to create an instance of Prober class and use it to implement your own probing r
     
 
     
-    <h4 class="name" id="Prober"><span class="type-signature"></span>new Prober<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Reporter"><span class="type-signature"></span>new Reporter<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -131,9 +133,11 @@ to create an instance of Prober class and use it to implement your own probing r
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>import { Prober } from "@zoom/probesdk";
-const prober = new Prober();
-prober.diagnoseVideo(constraints, options);</code></pre>
+    <pre class="prettyprint"><code>import { Reporter } from "@zoom/probesdk";
+const reporter = new Reporter();
+reporter.reportFeatures().then((features) => {
+ console.log(JSON.stringify(features));
+});</code></pre>
 
 
 
