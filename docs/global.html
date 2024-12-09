@@ -2829,6 +2829,176 @@ console.log(rid);</code></pre>
     
 
     
+    <h4 class="name" id="releaseMediaStream"><span class="type-signature"></span>releaseMediaStream<span class="signature">(stream)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Releases the resources associated with a given MediaStream.</p>
+<p>This function stops all tracks in the provided MediaStream to release
+the hardware resources (e.g., camera, microphone) and removes them
+from the stream. It ensures that no resources are left in use after
+the MediaStream is no longer needed.</p>
+<p>Note that ProbeSDK is not responsible for setting the stream you pass to null.
+So, the caller should maintain its lifecycle.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>stream</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">MediaStream</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The MediaStream object to release.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>Returns <code>true</code> if the stream was successfully released,
+or <code>false</code> if the input was invalid (e.g., null or undefined).</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+let result = releaseMediaStream(stream);
+console.log(result);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="reportBasicInfo"><span class="type-signature">(async) </span>reportBasicInfo<span class="signature">(navigator)</span><span class="type-signature"> &rarr; {Promise.&lt;{Array.&lt;<a href="global.html#BasicInfoEntry">BasicInfoEntry</a>>}>}</span></h4>
     
 
@@ -7509,13 +7679,13 @@ like removing the video element or the canvas on the screen.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
+    <h2><a href="index.html">Probe SDK Reference</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#releaseMediaStream">releaseMediaStream</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Thu Sep 12 2024 13:36:33 GMT+0800 (China Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Thu Dec 05 2024 10:26:36 GMT+0800 (China Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -1,132 +1,14 @@
 import { UAParser } from 'ua-parser-js';
 
-function _arrayLikeToArray(r, a) {
-  (null == a || a > r.length) && (a = r.length);
-  for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
-  return n;
-}
-function _arrayWithoutHoles(r) {
-  if (Array.isArray(r)) return _arrayLikeToArray(r);
-}
 function _assertClassBrand(e, t, n) {
   if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n;
   throw new TypeError("Private element is not present on this object");
 }
-function asyncGeneratorStep(n, t, e, r, o, a, c) {
-  try {
-    var i = n[a](c),
-      u = i.value;
-  } catch (n) {
-    return void e(n);
-  }
-  i.done ? t(u) : Promise.resolve(u).then(r, o);
-}
-function _asyncToGenerator(n) {
-  return function () {
-    var t = this,
-      e = arguments;
-    return new Promise(function (r, o) {
-      var a = n.apply(t, e);
-      function _next(n) {
-        asyncGeneratorStep(a, r, o, _next, _throw, "next", n);
-      }
-      function _throw(n) {
-        asyncGeneratorStep(a, r, o, _next, _throw, "throw", n);
-      }
-      _next(void 0);
-    });
-  };
-}
-function _checkPrivateRedeclaration(e, t) {
-  if (t.has(e)) throw new TypeError("Cannot initialize the same private elements twice on an object");
-}
-function _classCallCheck(a, n) {
-  if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
-}
 function _classPrivateFieldGet2(s, a) {
   return s.get(_assertClassBrand(s, a));
 }
-function _classPrivateFieldInitSpec(e, t, a) {
-  _checkPrivateRedeclaration(e, t), t.set(e, a);
-}
 function _classPrivateFieldSet2(s, a, r) {
   return s.set(_assertClassBrand(s, a), r), r;
-}
-function _classPrivateMethodInitSpec(e, a) {
-  _checkPrivateRedeclaration(e, a), a.add(e);
-}
-function _defineProperties(e, r) {
-  for (var t = 0; t < r.length; t++) {
-    var o = r[t];
-    o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o);
-  }
-}
-function _createClass(e, r, t) {
-  return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", {
-    writable: !1
-  }), e;
-}
-function _createForOfIteratorHelper(r, e) {
-  var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
-  if (!t) {
-    if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) {
-      t && (r = t);
-      var n = 0,
-        F = function () {};
-      return {
-        s: F,
-        n: function () {
-          return n >= r.length ? {
-            done: !0
-          } : {
-            done: !1,
-            value: r[n++]
-          };
-        },
-        e: function (r) {
-          throw r;
-        },
-        f: F
-      };
-    }
-    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-  var o,
-    a = !0,
-    u = !1;
-  return {
-    s: function () {
-      t = t.call(r);
-    },
-    n: function () {
-      var r = t.next();
-      return a = r.done, r;
-    },
-    e: function (r) {
-      u = !0, o = r;
-    },
-    f: function () {
-      try {
-        a || null == t.return || t.return();
-      } finally {
-        if (u) throw o;
-      }
-    }
-  };
-}
-function _defineProperty(e, r, t) {
-  return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
-    value: t,
-    enumerable: !0,
-    configurable: !0,
-    writable: !0
-  }) : e[r] = t, e;
-}
-function _iterableToArray(r) {
-  if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r);
-}
-function _nonIterableSpread() {
-  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 function _regeneratorRuntime() {
   _regeneratorRuntime = function () {
@@ -429,9 +311,6 @@ function _regeneratorRuntime() {
     }
   }, e;
 }
-function _toConsumableArray(r) {
-  return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread();
-}
 function _toPrimitive(t, r) {
   if ("object" != typeof t || !t) return t;
   var e = t[Symbol.toPrimitive];
@@ -446,12 +325,160 @@ function _toPropertyKey(t) {
   var i = _toPrimitive(t, "string");
   return "symbol" == typeof i ? i : i + "";
 }
-function _unsupportedIterableToArray(r, a) {
-  if (r) {
-    if ("string" == typeof r) return _arrayLikeToArray(r, a);
-    var t = {}.toString.call(r).slice(8, -1);
-    return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+  try {
+    var info = gen[key](arg);
+    var value = info.value;
+  } catch (error) {
+    reject(error);
+    return;
   }
+  if (info.done) {
+    resolve(value);
+  } else {
+    Promise.resolve(value).then(_next, _throw);
+  }
+}
+function _asyncToGenerator(fn) {
+  return function () {
+    var self = this,
+      args = arguments;
+    return new Promise(function (resolve, reject) {
+      var gen = fn.apply(self, args);
+      function _next(value) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+      }
+      function _throw(err) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+      }
+      _next(undefined);
+    });
+  };
+}
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+function _defineProperties(target, props) {
+  for (var i = 0; i < props.length; i++) {
+    var descriptor = props[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor);
+  }
+}
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps) _defineProperties(Constructor, staticProps);
+  Object.defineProperty(Constructor, "prototype", {
+    writable: false
+  });
+  return Constructor;
+}
+function _defineProperty(obj, key, value) {
+  key = _toPropertyKey(key);
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+  return obj;
+}
+function _toConsumableArray(arr) {
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+}
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+}
+function _iterableToArray(iter) {
+  if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
+}
+function _unsupportedIterableToArray(o, minLen) {
+  if (!o) return;
+  if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+  var n = Object.prototype.toString.call(o).slice(8, -1);
+  if (n === "Object" && o.constructor) n = o.constructor.name;
+  if (n === "Map" || n === "Set") return Array.from(o);
+  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+}
+function _arrayLikeToArray(arr, len) {
+  if (len == null || len > arr.length) len = arr.length;
+  for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+  return arr2;
+}
+function _nonIterableSpread() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+function _createForOfIteratorHelper(o, allowArrayLike) {
+  var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+  if (!it) {
+    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+      if (it) o = it;
+      var i = 0;
+      var F = function () {};
+      return {
+        s: F,
+        n: function () {
+          if (i >= o.length) return {
+            done: true
+          };
+          return {
+            done: false,
+            value: o[i++]
+          };
+        },
+        e: function (e) {
+          throw e;
+        },
+        f: F
+      };
+    }
+    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+  var normalCompletion = true,
+    didErr = false,
+    err;
+  return {
+    s: function () {
+      it = it.call(o);
+    },
+    n: function () {
+      var step = it.next();
+      normalCompletion = step.done;
+      return step;
+    },
+    e: function (e) {
+      didErr = true;
+      err = e;
+    },
+    f: function () {
+      try {
+        if (!normalCompletion && it.return != null) it.return();
+      } finally {
+        if (didErr) throw err;
+      }
+    }
+  };
+}
+function _checkPrivateRedeclaration(obj, privateCollection) {
+  if (privateCollection.has(obj)) {
+    throw new TypeError("Cannot initialize the same private elements twice on an object");
+  }
+}
+function _classPrivateFieldInitSpec(obj, privateMap, value) {
+  _checkPrivateRedeclaration(obj, privateMap);
+  privateMap.set(obj, value);
+}
+function _classPrivateMethodInitSpec(obj, privateSet) {
+  _checkPrivateRedeclaration(obj, privateSet);
+  privateSet.add(obj);
 }
 
 /**
@@ -706,7 +733,7 @@ function connectWebSocket(_x) {
   return _connectWebSocket.apply(this, arguments);
 }
 function _connectWebSocket() {
-  _connectWebSocket = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11(url) {
+  _connectWebSocket = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(url) {
     return _regeneratorRuntime().wrap(function _callee11$(_context11) {
       while (1) switch (_context11.prev = _context11.next) {
         case 0:
@@ -742,11 +769,11 @@ function js_send_data(prober_instance, buffer, len, send_by_data) {
   if (prober_instance) {
     var data = new Uint8Array(Module.HEAP8.buffer, buffer, len);
     if (send_by_data) {
-      if (prober_instance.writer) {
+      if (prober_instance.writer !== null && prober_instance.writer !== undefined) {
         prober_instance.writer.write(data);
       } else if (prober_instance.dataChannelOpened) {
         prober_instance.videoDataChannel.send(data);
-      } else if (prober_instance.mediaSocket) {
+      } else if (prober_instance.mediaSocket !== null && prober_instance.mediaSocket !== undefined) {
         prober_instance.mediaSocket.send(data);
       }
     } else {
@@ -862,7 +889,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   return _createClass(NetworkProberInst, [{
     key: "connect",
     value: function () {
-      var _connect = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(timeout) {
+      var _connect = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(timeout) {
         var _this = this;
         var _data$result, jwtTokenUrl, tokenRsp, ridPart, rid, data, token, payload, hasGeoProbeConnected, geoProbeList, cmdChannelResult, _iterator, _step, geoProbe, cmdChannelUrl, _yield$this$getConnec, connectionId, index, mediaUrl, mediaChannelResult, isDataChannelEstablished;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
@@ -1073,14 +1100,18 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "startUplinkProbe",
     value: function () {
-      var _startUplinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var count, interval, probeTime, prober_instance;
+      var _startUplinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var workerScript, blob, count, interval, probeTime, prober_instance;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
               console.log("startUplinkProbe");
               if (!this.worker) {
-                this.worker = new Worker(new URL("prober_worker.js", import.meta.url), {
+                workerScript = "\n        var worker_active = false;\n\n        setInterval(() => {\n          if (worker_active) {\n            postMessage(worker_active);\n          }\n        }, 10);\n\n        onmessage = (e) => {\n          worker_active = e.data;\n        };\n      ";
+                blob = new Blob([workerScript], {
+                  type: "application/javascript"
+                });
+                this.worker = new Worker(URL.createObjectURL(blob), {
                   type: "module"
                 });
               }
@@ -1110,11 +1141,11 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "stopUplinkProbe",
     value: function () {
-      var _stopUplinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+      var _stopUplinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
             case 0:
-              this.api.prober_start_send(this.prober);
+              this.api.prober_stop_send(this.prober);
               if (this.worker) {
                 this.worker.postMessage(false);
               }
@@ -1132,7 +1163,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "startDownlinkProbe",
     value: function () {
-      var _startDownlinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+      var _startDownlinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
         return _regeneratorRuntime().wrap(function _callee4$(_context4) {
           while (1) switch (_context4.prev = _context4.next) {
             case 0:
@@ -1153,7 +1184,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "stopDownlinkProbe",
     value: function () {
-      var _stopDownlinkProbe = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
+      var _stopDownlinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
         var commandMessage;
         return _regeneratorRuntime().wrap(function _callee5$(_context5) {
           while (1) switch (_context5.prev = _context5.next) {
@@ -1175,7 +1206,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "connectWebTransport",
     value: function () {
-      var _connectWebTransport = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+      var _connectWebTransport = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
         var url, transport, writer, reader;
         return _regeneratorRuntime().wrap(function _callee6$(_context6) {
           while (1) switch (_context6.prev = _context6.next) {
@@ -1213,7 +1244,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "webTransportRead",
     value: function () {
-      var _webTransportRead = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7(reader) {
+      var _webTransportRead = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(reader) {
         var _yield$reader$read, value, done, probeData;
         return _regeneratorRuntime().wrap(function _callee7$(_context7) {
           while (1) switch (_context7.prev = _context7.next) {
@@ -1339,7 +1370,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "connectDataChannel",
     value: function () {
-      var _connectDataChannel = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9(timeout) {
+      var _connectDataChannel = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(timeout) {
         var _this2 = this;
         return _regeneratorRuntime().wrap(function _callee9$(_context9) {
           while (1) switch (_context9.prev = _context9.next) {
@@ -1350,8 +1381,8 @@ var NetworkProberInst = /*#__PURE__*/function () {
                 _this2.api.readPackets(_this2.prober, probeData, ev.data.byteLength, true);
               });
               _context9.next = 4;
-              return this.videoPeer.createOffer().then(/*#__PURE__*/function () {
-                var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8(offer) {
+              return this.videoPeer.createOffer().then( /*#__PURE__*/function () {
+                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(offer) {
                   var msg, data;
                   return _regeneratorRuntime().wrap(function _callee8$(_context8) {
                     while (1) switch (_context8.prev = _context8.next) {
@@ -1393,14 +1424,14 @@ var NetworkProberInst = /*#__PURE__*/function () {
                 _this2.videoDataChannel.addEventListener("open", function (ev) {
                   console.log("videoDataChannel open() ev=".concat(ev));
                   clearTimeout(timeoutId);
-                  // this.dataChannelOpened = true;
+                  _this2.dataChannelOpened = true;
                   resolve(true);
                 });
                 _this2.videoDataChannel.addEventListener("error", function (ev) {
                   console.log("videoDataChannel open() ev=".concat(ev));
                   clearTimeout(timeoutId);
                   _this2.closeConnectingDataChannel();
-                  // this.dataChannelOpened = false;
+                  _this2.dataChannelOpened = false;
                   resolve(false);
                 });
               }));
@@ -1418,7 +1449,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
   }, {
     key: "getConnectionId",
     value: function () {
-      var _getConnectionId = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+      var _getConnectionId = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
         var _this3 = this;
         return _regeneratorRuntime().wrap(function _callee10$(_context10) {
           while (1) switch (_context10.prev = _context10.next) {
@@ -1695,10 +1726,10 @@ var Browser$1 = /*#__PURE__*/function () {
       if (this.getBrowserName() === "chrome") {
         var _navigator$userAgentD;
         if ((_navigator$userAgentD = navigator.userAgentData) !== null && _navigator$userAgentD !== void 0 && _navigator$userAgentD.brands) {
-          var _isChromium = navigator.userAgentData.brands.some(function (brand) {
+          var isChromium = navigator.userAgentData.brands.some(function (brand) {
             return brand.brand === "Chromium";
           });
-          return _isChromium;
+          return isChromium;
         }
       }
       return false;
@@ -2346,7 +2377,7 @@ var Feature = /*#__PURE__*/function () {
   }, {
     key: "isWebGPUSupported",
     value: function () {
-      var _isWebGPUSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var _isWebGPUSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var isWebGPUAllowedOnTargetPlatforms, isChrome, isEdge, isOpera, isWebGPUAllowedOnTargetBrowsers, adapter, gpuDevice, adapterInfo, GPU_VENDOR_WHITELIST, index, canvas, gpuContext;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -2470,7 +2501,7 @@ var Feature = /*#__PURE__*/function () {
   }, {
     key: "isVideoEncodingConfigSupported",
     value: function () {
-      var _isVideoEncodingConfigSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(config) {
+      var _isVideoEncodingConfigSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(config) {
         var isSupported;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
@@ -2500,7 +2531,7 @@ var Feature = /*#__PURE__*/function () {
   }, {
     key: "isVideoDecodingConfigSupported",
     value: function () {
-      var _isVideoDecodingConfigSupported = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(config) {
+      var _isVideoDecodingConfigSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(config) {
         var isSupported;
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
@@ -2760,7 +2791,7 @@ var Reporter = /*#__PURE__*/function () {
   return _createClass(Reporter, [{
     key: "reportFeatures",
     value: (function () {
-      var _reportFeatures = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var _reportFeatures = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var features, audioDenoiseFeature, audioEchoCancellationFeature, audioStereoFeature, virtualBgFeature, videoMaskFeature, webgpuFeature, videoSendHDFeature, videoSendFullHDFeature, video3x3GalleryViewFeature, video5x5GalleryViewFeature, screenSharingFeature;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -2821,7 +2852,7 @@ var Reporter = /*#__PURE__*/function () {
   }, {
     key: "reportBasicInfo",
     value: (function () {
-      var _reportBasicInfo = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
+      var _reportBasicInfo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
         var userAgent, browserName, browserVersion, osName, osVersion, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, basicInfoEntries;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
@@ -3146,7 +3177,7 @@ function _reportVideoSendHDSupported() {
   return _reportVideoSendHDSupported2.apply(this, arguments);
 }
 function _reportVideoSendHDSupported2() {
-  _reportVideoSendHDSupported2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+  _reportVideoSendHDSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
     var checkList, hwConcurrency, isHwConcurrencySupported, hwConcurrencyEntry, isIPhoneOrIPadOS, isIPadOS, osReqEntry, isAmdGraphic, isVp9Codec, isAmdHwConcurrencySupported, hwReqEntry, isVideoFrameSupported, vfApiReqEntry;
     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
       while (1) switch (_context3.prev = _context3.next) {
@@ -3393,7 +3424,7 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
         Module: Module
       }));
     }
-    Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+    Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
           case 0:
@@ -3403,8 +3434,8 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
             if (wasmUrl != undefined && wasmUrl != "") {
               locateFile(wasmUrl);
             }
-            _classPrivateFieldGet2(_networkProberInst, _this).connect(connectTimeout).then(/*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2(isConnected) {
+            _classPrivateFieldGet2(_networkProberInst, _this).connect(connectTimeout).then( /*#__PURE__*/function () {
+              var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(isConnected) {
                 var sendStopProbe, diagnosticReport;
                 return _regeneratorRuntime().wrap(function _callee2$(_context2) {
                   while (1) switch (_context2.prev = _context2.next) {
@@ -3420,7 +3451,7 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
                       return _classPrivateFieldGet2(_networkProberInst, _this).startDownlinkProbe();
                     case 5:
                       sendStopProbe = /*#__PURE__*/function () {
-                        var _ref3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+                        var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
                           var diagnosticReport;
                           return _regeneratorRuntime().wrap(function _callee$(_context) {
                             while (1) switch (_context.prev = _context.next) {
@@ -3511,7 +3542,7 @@ function _genDiagnosticReport() {
   return _genDiagnosticReport2.apply(this, arguments);
 }
 function _genDiagnosticReport2() {
-  _genDiagnosticReport2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+  _genDiagnosticReport2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
     return _regeneratorRuntime().wrap(function _callee4$(_context4) {
       while (1) switch (_context4.prev = _context4.next) {
         case 0:
@@ -3739,7 +3770,7 @@ var WebGPURenderer = /*#__PURE__*/function () {
   return _createClass(WebGPURenderer, [{
     key: "preview",
     value: function () {
-      var _preview = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(source, target, viewport) {
+      var _preview = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(source, target, viewport) {
         var adapter, device, format, ctx, sampler, pipeline, resBundle;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -3907,6 +3938,7 @@ var RenderersProxy = /*#__PURE__*/function () {
         _classPrivateFieldGet2(_mRenderer, this).stopPreview();
       }
       _classPrivateFieldSet2(_mRenderer, this, null);
+      options.stream = null;
       return true;
     }
   }], [{
@@ -3965,7 +3997,7 @@ var Prober = /*#__PURE__*/function () {
   return _createClass(Prober, [{
     key: "requestMediaDevicePermission",
     value: (function () {
-      var _requestMediaDevicePermission = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(constraints) {
+      var _requestMediaDevicePermission = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(constraints) {
         var mediaPmsResult;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -4002,12 +4034,52 @@ var Prober = /*#__PURE__*/function () {
       return requestMediaDevicePermission;
     }()
     /**
+     * Releases the resources associated with a given MediaStream.
+     *
+     * This function stops all tracks in the provided MediaStream to release
+     * the hardware resources (e.g., camera, microphone) and removes them
+     * from the stream. It ensures that no resources are left in use after
+     * the MediaStream is no longer needed.
+     *
+     * Note that ProbeSDK is not responsible for setting the {@link stream} you pass to null.
+     * So, the caller should maintain its lifecycle.
+     *
+     * @function releaseMediaStream
+     * @param {MediaStream} stream - The MediaStream object to release.
+     * @returns {boolean} - Returns `true` if the stream was successfully released,
+     *                      or `false` if the input was invalid (e.g., null or undefined).
+     *
+     * @example
+     * const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+     * let result = releaseMediaStream(stream);
+     * console.log(result);
+     */
+    )
+  }, {
+    key: "releaseMediaStream",
+    value: function releaseMediaStream(stream) {
+      if (!stream) {
+        return false; // Return false if the input stream is null or undefined
+      }
+      var tracks = stream.getTracks(); // Get all tracks from the MediaStream
+      if (!tracks || tracks.length === 0) {
+        console.error("releaseMediaStream() no available tracks to stop."); // Log an error if there are no tracks
+      }
+      tracks.forEach(function (track) {
+        track.stop(); // Stop each track to release hardware resources
+        stream.removeTrack(track); // Remove the track from the MediaStream
+      });
+      return true; // Indicate successful release of the stream
+    }
+
+    /**
      * An object, indicates an error generated by ProberSDK.
      *
      * @typedef {object} PSDKError
      * @property {number} code an error code defined by {@link ERR_CODE}.
      * @property {string} message the error message.
      */
+
     /**
      * Requests the media devices asynchronously.
      *
@@ -4024,11 +4096,10 @@ var Prober = /*#__PURE__*/function () {
      *  console.log(`error:${result.error}, devices=${result.devices}`);
      * });
      */
-    )
   }, {
     key: "requestMediaDevices",
     value: (function () {
-      var _requestMediaDevices = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+      var _requestMediaDevices = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
         var _navigator$mediaDevic;
         var mdResult, devices;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
@@ -4269,7 +4340,7 @@ var Prober = /*#__PURE__*/function () {
   }, {
     key: "diagnoseVideo",
     value: (function () {
-      var _diagnoseVideo = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(constraints, options) {
+      var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(constraints, options) {
         var diagnosticResult, isRendererTypeSupported, isTypeCheckPass, areTypesCheckPass, rendersProxy;
         return _regeneratorRuntime().wrap(function _callee4$(_context4) {
           while (1) switch (_context4.prev = _context4.next) {
@@ -4333,8 +4404,8 @@ var Prober = /*#__PURE__*/function () {
               return _context4.abrupt("return", diagnosticResult);
             case 29:
               rendersProxy = RenderersProxy.getInstance();
-              navigator.mediaDevices.getUserMedia(constraints).then(/*#__PURE__*/function () {
-                var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(stream) {
+              navigator.mediaDevices.getUserMedia(constraints).then( /*#__PURE__*/function () {
+                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(stream) {
                   var video, viewport;
                   return _regeneratorRuntime().wrap(function _callee3$(_context3) {
                     while (1) switch (_context3.prev = _context3.next) {
@@ -4635,12 +4706,12 @@ function _isRendererTypeSupported(_x5) {
   return _isRendererTypeSupported2.apply(this, arguments);
 }
 function _isRendererTypeSupported2() {
-  _isRendererTypeSupported2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
+  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
     return _regeneratorRuntime().wrap(function _callee6$(_context6) {
       while (1) switch (_context6.prev = _context6.next) {
         case 0:
-          return _context6.abrupt("return", new Promise(/*#__PURE__*/function () {
-            var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
+          return _context6.abrupt("return", new Promise( /*#__PURE__*/function () {
+            var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
               var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
               return _regeneratorRuntime().wrap(function _callee5$(_context5) {
                 while (1) switch (_context5.prev = _context5.next) {
