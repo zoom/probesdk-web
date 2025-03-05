@@ -124,6 +124,7 @@ import { Prober } from "@zoom/probesdk";
 
 // create a new instance of Prober
 const prober = new Prober();
+let videoDiagnosticResult;
 
 // start a video diagnostic
 function startToDiagnoseVideo(canvas) {
@@ -133,13 +134,33 @@ function startToDiagnoseVideo(canvas) {
     },
   };
   const options = {
-    type: 2, // WebGL
+    rendererType: 2, // WebGL
     target: canvas,
   };
-  prober.diagnoseVideo(constraint, options).then((diagnosticResult) => {
-    console.log(diagnosticResult);
+  prober.diagnoseVideo(constraint, options).then((result) => {
+    console.log(result);
+    videoDiagnosticResult = result;
   });
 }
+```
+
+Call `stopToDiagnoseVideo(stream)` to stop diagnosing video. The parameter `stream` saved in the result of calling `diagnoseVideo` is **optional**. Note that: If you don't pass this parameter when you call this function, it simply stops the preview part of the video diagnostic, and you need to call `releaseMediaStream(stream)` at the right time to close the video stream.
+
+```javascript
+import { Prober } from "@zoom/probesdk";
+
+// create a new instance of Prober
+const prober = new Prober();
+let videoDiagnosticResult;
+
+function stopToDiagnoseVideo() {
+  let result = prober.stopToDiagnoseVideo(videoDiagnosticResult.stream);
+  videoDiagnosticResult.stream = null;
+  console.log(`stopToDiagnoseVideo() result: ${result}`);
+}
+
+// or call releaseMediaStream(stream) to release the MediaStream anytime
+prober.releaseMediaStream(videoDiagnosticResult.stream);
 ```
 
 ## Start a comprehensive diagnostic test
@@ -157,7 +178,11 @@ function startToDiagnose() {
   // 1. you can ignore the URLs, so the default URLs that deployed in the ProbeSDK will be used
   const jsUrl = "";
   const wasmUrl = "";
-  const config = { probeDuration: 120 * 1000, connectTimeout: 120 * 1000 };
+  const config = { 
+    probeDuration: 120 * 1000,
+    connectTimeout: 120 * 1000,
+    domain: '[a Zoom or custom domain]',
+  };
   prober
     .startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
       console.log(stats);
@@ -171,9 +196,15 @@ function startToDiagnose() {
 }
 ```
 
+When the diagnostic program is finished, we suggest that it is a good idea to call the `cleanup()` function to clean up some of the resources created in ProbeSDK (e.g., some memory resources, closing the network connection used for diagnostics, etc.). For example, it is a good time to call it when the user closes the diagnostics page or jumps to another page.
+
+```javascript
+prober.cleanup();
+```
+
 ## Generate a report of supported features
 
-This `Reporter` provides detection services to report if videoconferencing  features are supported on the target device.
+This `Reporter` provides detection services to report if video conferencing features are supported on the target device.
 
 ```javascript
 const reporter = new Reporter();

@@ -772,7 +772,9 @@ function js_send_data(prober_instance, buffer, len, send_by_data) {
       if (prober_instance.writer !== null && prober_instance.writer !== undefined) {
         prober_instance.writer.write(data);
       } else if (prober_instance.dataChannelOpened) {
-        prober_instance.videoDataChannel.send(data);
+        if (prober_instance.videoDataChannel) {
+          prober_instance.videoDataChannel.send(data);
+        }
       } else if (prober_instance.mediaSocket !== null && prober_instance.mediaSocket !== undefined) {
         prober_instance.mediaSocket.send(data);
       }
@@ -780,7 +782,9 @@ function js_send_data(prober_instance, buffer, len, send_by_data) {
       var binString = bytesToBase64(data);
       var body = {};
       body["data"] = binString;
-      prober_instance.socket.send(getCommandMessage(4106, body));
+      if (prober_instance.socket) {
+        prober_instance.socket.send(getCommandMessage(4106, body));
+      }
     }
   }
 }
@@ -823,6 +827,7 @@ function wcl_trace_log(a, b) {
 var _NetworkProberInst_brand = /*#__PURE__*/new WeakSet();
 var NetworkProberInst = /*#__PURE__*/function () {
   function NetworkProberInst(params) {
+    var _this = this;
     _classCallCheck(this, NetworkProberInst);
     _classPrivateMethodInitSpec(this, _NetworkProberInst_brand);
     this.dc = "No available service zone.";
@@ -850,6 +855,12 @@ var NetworkProberInst = /*#__PURE__*/function () {
     this.keepAliveTimer = null;
     this.videoPeer = new RTCPeerConnection({
       iceCandidatePoolSize: 1
+    });
+    this.videoPeer.addEventListener("iceconnectionstatechange", function () {
+      if (_this.videoPeer.iceConnectionState === "disconnected" || _this.videoPeer.iceConnectionState === "failed" || _this.videoPeer.iceConnectionState === "closed") {
+        console.log("PeerConnection disconnected, closing DataChannel.");
+        _this.cleanupDataChannel();
+      }
     });
     this.videoDataChannel = this.videoPeer.createDataChannel("prober_datachannel", {
       ordered: false,
@@ -890,7 +901,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
     key: "connect",
     value: function () {
       var _connect = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(timeout) {
-        var _this = this;
+        var _this2 = this;
         var _data$result, jwtTokenUrl, tokenRsp, ridPart, rid, data, token, payload, hasGeoProbeConnected, geoProbeList, cmdChannelResult, _iterator, _step, geoProbe, cmdChannelUrl, _yield$this$getConnec, connectionId, index, mediaUrl, mediaChannelResult, isDataChannelEstablished;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -1030,7 +1041,7 @@ var NetworkProberInst = /*#__PURE__*/function () {
               // we need to start a timer with 5 seconds interval to send keep alive message to server
               if (!this.keepAliveTimer) {
                 this.keepAliveTimer = setInterval(function () {
-                  _this.sendKeepAliveMessage();
+                  _this2.sendKeepAliveMessage();
                 }, 5000);
               }
               this.socket = cmdChannelResult.socket;
@@ -1043,7 +1054,9 @@ var NetworkProberInst = /*#__PURE__*/function () {
               this.connectionId = connectionId;
               this.index = index;
               this.cmdMessageRegister();
-              this.prober = this.api.create_prober();
+              if (!this.prober) {
+                this.prober = this.api.create_prober();
+              }
 
               // 2. Media websocket works as the backup of the data channel if fails
               mediaUrl = "wss://".concat(this.probeServerDomain, "/media/?cid=").concat(this.connectionId, "&index=").concat(this.index);
@@ -1371,26 +1384,44 @@ var NetworkProberInst = /*#__PURE__*/function () {
     key: "connectDataChannel",
     value: function () {
       var _connectDataChannel = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(timeout) {
-        var _this2 = this;
+        var _this3 = this;
         return _regeneratorRuntime().wrap(function _callee9$(_context9) {
           while (1) switch (_context9.prev = _context9.next) {
             case 0:
+              if (!this.videoPeer) {
+                this.videoPeer = new RTCPeerConnection({
+                  iceCandidatePoolSize: 1
+                });
+                this.videoPeer.addEventListener("iceconnectionstatechange", function () {
+                  if (_this3.videoPeer.iceConnectionState === "disconnected" || _this3.videoPeer.iceConnectionState === "failed" || _this3.videoPeer.iceConnectionState === "closed") {
+                    console.log("PeerConnection disconnected, closing DataChannel.");
+                    _this3.cleanupDataChannel();
+                  }
+                });
+              }
+              if (!this.videoDataChannel) {
+                this.videoDataChannel = this.videoPeer.createDataChannel("prober_datachannel", {
+                  ordered: false,
+                  maxRetransmits: 0,
+                  reliable: false
+                });
+              }
               this.videoDataChannel.binaryType = "arraybuffer";
               this.videoDataChannel.addEventListener("message", function (ev) {
                 var probeData = new Uint8Array(ev.data);
-                _this2.api.readPackets(_this2.prober, probeData, ev.data.byteLength, true);
+                _this3.api.readPackets(_this3.prober, probeData, ev.data.byteLength, true);
               });
-              _context9.next = 4;
+              _context9.next = 6;
               return this.videoPeer.createOffer().then( /*#__PURE__*/function () {
                 var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(offer) {
                   var msg, data;
                   return _regeneratorRuntime().wrap(function _callee8$(_context8) {
                     while (1) switch (_context8.prev = _context8.next) {
                       case 0:
-                        console.log("createOffer() connectionId=", _this2.connectionId);
-                        offer.sdp = offer.sdp.replace(/a=ice-ufrag:.+/g, "a=ice-ufrag:".concat(_this2.connectionId));
+                        console.log("createOffer() connectionId=", _this3.connectionId);
+                        offer.sdp = offer.sdp.replace(/a=ice-ufrag:.+/g, "a=ice-ufrag:".concat(_this3.connectionId));
                         _context8.next = 4;
-                        return _this2.videoPeer.setLocalDescription(offer);
+                        return _this3.videoPeer.setLocalDescription(offer);
                       case 4:
                         console.log("videoPeer=".concat(offer.sdp));
                         msg = {};
@@ -1398,11 +1429,11 @@ var NetworkProberInst = /*#__PURE__*/function () {
                         msg["evt"] = 24321;
                         offer = {};
                         offer["type"] = 2;
-                        offer["sdp"] = _this2.videoPeer.localDescription.sdp;
+                        offer["sdp"] = _this3.videoPeer.localDescription.sdp;
                         msg["offer"] = offer;
                         data = JSON.stringify(msg);
                         _context8.next = 15;
-                        return _this2.socket.send(data);
+                        return _this3.socket.send(data);
                       case 15:
                       case "end":
                         return _context8.stop();
@@ -1413,29 +1444,33 @@ var NetworkProberInst = /*#__PURE__*/function () {
                   return _ref.apply(this, arguments);
                 };
               }());
-            case 4:
+            case 6:
               return _context9.abrupt("return", new Promise(function (resolve, reject) {
                 var timeoutId = setTimeout(function () {
                   clearTimeout(timeoutId);
                   console.log("dataChannel timeout");
-                  _this2.closeConnectingDataChannel();
+                  _this3.cleanupDataChannel();
                   resolve(false);
                 }, timeout);
-                _this2.videoDataChannel.addEventListener("open", function (ev) {
-                  console.log("videoDataChannel open() ev=".concat(ev));
+                _this3.videoDataChannel.addEventListener("open", function (ev) {
+                  console.log("DataChannel opened!");
                   clearTimeout(timeoutId);
-                  _this2.dataChannelOpened = true;
+                  _this3.dataChannelOpened = true;
                   resolve(true);
                 });
-                _this2.videoDataChannel.addEventListener("error", function (ev) {
-                  console.log("videoDataChannel open() ev=".concat(ev));
+                _this3.videoDataChannel.addEventListener("close", function () {
+                  console.log("DataChannel closed, cleaning up.");
+                  _this3.cleanupDataChannel();
+                  resolve(false);
+                });
+                _this3.videoDataChannel.addEventListener("error", function (ev) {
+                  console.log("DataChannel error", ev);
                   clearTimeout(timeoutId);
-                  _this2.closeConnectingDataChannel();
-                  _this2.dataChannelOpened = false;
+                  _this3.cleanupDataChannel();
                   resolve(false);
                 });
               }));
-            case 5:
+            case 7:
             case "end":
               return _context9.stop();
           }
@@ -1450,12 +1485,12 @@ var NetworkProberInst = /*#__PURE__*/function () {
     key: "getConnectionId",
     value: function () {
       var _getConnectionId = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
-        var _this3 = this;
+        var _this4 = this;
         return _regeneratorRuntime().wrap(function _callee10$(_context10) {
           while (1) switch (_context10.prev = _context10.next) {
             case 0:
               return _context10.abrupt("return", new Promise(function (resolve) {
-                _this3.socket.onmessage = function (event) {
+                _this4.socket.onmessage = function (event) {
                   var data = JSON.parse(event.data);
                   if (isDebugMode()) {
                     console.log("getConnectionId() data: ".concat(JSON.stringify(data)));
@@ -1516,25 +1551,37 @@ var NetworkProberInst = /*#__PURE__*/function () {
       };
     }
   }, {
-    key: "closeConnectingDataChannel",
-    value: function closeConnectingDataChannel() {
-      if (this.videoDataChannel && this.videoDataChannel.readyState === "connecting") {
+    key: "cleanupDataChannel",
+    value: function cleanupDataChannel() {
+      if (this.videoDataChannel) {
+        console.log("Cleaning up DataChannel...");
+        this.dataChannelOpened = false;
         this.videoDataChannel.close();
-        console.log("the connecting data channel is closed.");
+        this.videoDataChannel = null;
       }
     }
   }, {
     key: "cleanupConnections",
     value: function cleanupConnections() {
+      console.log('cleaning up connections...');
       if (this.socket) {
         this.socket.close();
+        this.socket = null;
       }
       if (this.mediaSocket) {
         this.mediaSocket.close();
+        this.mediaSocket = null;
       }
-      if (this.videoDataChannel) {
-        this.videoDataChannel.close();
+      if (this.videoPeer) {
+        this.videoPeer.close();
+        this.videoPeer = null;
       }
+      this.cleanupDataChannel();
+    }
+  }, {
+    key: "cleanup",
+    value: function cleanup() {
+      this.cleanupConnections();
     }
   }, {
     key: "getNetworkDiagnosticReport",
@@ -2431,24 +2478,36 @@ var Feature = /*#__PURE__*/function () {
               }
               return _context.abrupt("return", false);
             case 23:
-              _context.next = 25;
+              adapterInfo = null;
+              if (!(typeof adapter.requestAdapterInfo === 'function')) {
+                _context.next = 30;
+                break;
+              }
+              _context.next = 27;
               return adapter.requestAdapterInfo();
-            case 25:
+            case 27:
               adapterInfo = _context.sent;
+              _context.next = 31;
+              break;
+            case 30:
+              if ('info' in adapter) {
+                adapterInfo = adapter.info;
+              }
+            case 31:
               if (adapterInfo) {
-                _context.next = 28;
+                _context.next = 33;
                 break;
               }
               return _context.abrupt("return", false);
-            case 28:
+            case 33:
               GPU_VENDOR_WHITELIST = ["intel", "nvidia", "apple", "amd", "qualcomm"];
               index = GPU_VENDOR_WHITELIST.indexOf(adapterInfo.vendor);
               if (!(index === -1)) {
-                _context.next = 32;
+                _context.next = 37;
                 break;
               }
               return _context.abrupt("return", false);
-            case 32:
+            case 37:
               canvas = null;
               if (Feature.isOffscreenCanvasSupported()) {
                 canvas = new OffscreenCanvas(1, 1);
@@ -2457,15 +2516,15 @@ var Feature = /*#__PURE__*/function () {
               }
               gpuContext = canvas.getContext("webgpu");
               if (gpuContext) {
-                _context.next = 38;
+                _context.next = 43;
                 break;
               }
               canvas = null;
               return _context.abrupt("return", false);
-            case 38:
+            case 43:
               canvas = null;
               return _context.abrupt("return", true);
-            case 40:
+            case 45:
             case "end":
               return _context.stop();
           }
@@ -3317,11 +3376,12 @@ var NetworkAgent = /*#__PURE__*/function () {
     key: "diagnose",
     value: function diagnose(jsUrl, wasmUrl, config, proberObserverProxy) {
       var domain = JWT_DOMAINS.PROD;
-      if ('domain' in config) {
+      if ("domain" in config) {
         if (_assertClassBrand(_NetworkAgent_brand, this, _isValidJWTDomain).call(this, config.domain)) {
           domain = config.domain;
         } else {
-          console.error("Invalid jwt domain: ".concat(config.domain));
+          console.log("custom jwt domain: ".concat(config.domain));
+          domain = config.domain;
         }
       } else {
         console.warn("jwt domain is not configured in config, so use production domain.");
@@ -3352,6 +3412,13 @@ var NetworkAgent = /*#__PURE__*/function () {
     key: "queryRid",
     value: function queryRid() {
       return _classPrivateFieldGet2(_networkProberInst, this).getRid();
+    }
+  }, {
+    key: "cleanup",
+    value: function cleanup() {
+      if (_classPrivateFieldGet2(_networkProberInst, this)) {
+        _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+      }
     }
   }]);
 }();
@@ -3424,9 +3491,9 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
         Module: Module
       }));
     }
-    Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-        while (1) switch (_context3.prev = _context3.next) {
+    Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
           case 0:
             console.log("Module.onRuntimeInitialized!");
 
@@ -3434,91 +3501,100 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
             if (wasmUrl != undefined && wasmUrl != "") {
               locateFile(wasmUrl);
             }
-            _classPrivateFieldGet2(_networkProberInst, _this).connect(connectTimeout).then( /*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(isConnected) {
-                var sendStopProbe, diagnosticReport;
-                return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-                  while (1) switch (_context2.prev = _context2.next) {
-                    case 0:
-                      if (!isConnected) {
-                        _context2.next = 9;
-                        break;
-                      }
-                      _context2.next = 3;
-                      return _classPrivateFieldGet2(_networkProberInst, _this).startUplinkProbe();
-                    case 3:
-                      _context2.next = 5;
-                      return _classPrivateFieldGet2(_networkProberInst, _this).startDownlinkProbe();
-                    case 5:
-                      sendStopProbe = /*#__PURE__*/function () {
-                        var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-                          var diagnosticReport;
-                          return _regeneratorRuntime().wrap(function _callee$(_context) {
-                            while (1) switch (_context.prev = _context.next) {
-                              case 0:
-                                console.log("stop probing...");
-                                _context.next = 3;
-                                return _classPrivateFieldGet2(_networkProberInst, _this).stopUplinkProbe();
-                              case 3:
-                                _context.next = 5;
-                                return _classPrivateFieldGet2(_networkProberInst, _this).stopDownlinkProbe();
-                              case 5:
-                                if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
-                                  _context.next = 10;
-                                  break;
-                                }
-                                _context.next = 8;
-                                return _assertClassBrand(_NetworkAgent_brand, _this, _genDiagnosticReport).call(_this);
-                              case 8:
-                                diagnosticReport = _context.sent;
-                                proberObserverProxy.onReportObserver(diagnosticReport);
-                              case 10:
-                                _classPrivateFieldGet2(_networkProberInst, _this).cleanupConnections();
-                                _classPrivateFieldGet2(_networkProberInst, _this).killKeepAliveTimer();
-                              case 12:
-                              case "end":
-                                return _context.stop();
-                            }
-                          }, _callee);
-                        }));
-                        return function sendStopProbe() {
-                          return _ref3.apply(this, arguments);
-                        };
-                      }();
-                      setTimeout(sendStopProbe, probingDuration);
-                      _context2.next = 16;
-                      break;
-                    case 9:
-                      if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
-                        _context2.next = 14;
-                        break;
-                      }
-                      _context2.next = 12;
-                      return _assertClassBrand(_NetworkAgent_brand, _this, _genDiagnosticReport).call(_this);
-                    case 12:
-                      diagnosticReport = _context2.sent;
-                      proberObserverProxy.onReportObserver(diagnosticReport);
-                    case 14:
-                      _classPrivateFieldGet2(_networkProberInst, _this).cleanupConnections();
-                      _classPrivateFieldGet2(_networkProberInst, _this).killKeepAliveTimer();
-                    case 16:
-                    case "end":
-                      return _context2.stop();
-                  }
-                }, _callee2);
-              }));
-              return function (_x) {
-                return _ref2.apply(this, arguments);
-              };
-            }());
-          case 3:
+          case 2:
           case "end":
-            return _context3.stop();
+            return _context.stop();
         }
-      }, _callee3);
+      }, _callee);
     }));
+    _assertClassBrand(_NetworkAgent_brand, _this, _startProbing).call(_this, proberObserverProxy, connectTimeout, probingDuration);
   };
   document.body.appendChild(script);
+}
+function _startProbing(_x, _x2, _x3) {
+  return _startProbing2.apply(this, arguments);
+}
+function _startProbing2() {
+  _startProbing2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(proberObserverProxy, connectTimeout, probingDuration) {
+    var _this2 = this;
+    var isConnected, diagnosticReport;
+    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+      while (1) switch (_context3.prev = _context3.next) {
+        case 0:
+          if (Module.onRuntimeInitialized) {
+            _context3.next = 3;
+            break;
+          }
+          console.error("Module is not initialized yet.");
+          return _context3.abrupt("return");
+        case 3:
+          console.log("Starting network probing...");
+          _context3.next = 6;
+          return _classPrivateFieldGet2(_networkProberInst, this).connect(connectTimeout);
+        case 6:
+          isConnected = _context3.sent;
+          if (!isConnected) {
+            _context3.next = 15;
+            break;
+          }
+          _context3.next = 10;
+          return _classPrivateFieldGet2(_networkProberInst, this).startUplinkProbe();
+        case 10:
+          _context3.next = 12;
+          return _classPrivateFieldGet2(_networkProberInst, this).startDownlinkProbe();
+        case 12:
+          setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+            var diagnosticReport;
+            return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+              while (1) switch (_context2.prev = _context2.next) {
+                case 0:
+                  console.log("Stopping probing...");
+                  _context2.next = 3;
+                  return _classPrivateFieldGet2(_networkProberInst, _this2).stopUplinkProbe();
+                case 3:
+                  _context2.next = 5;
+                  return _classPrivateFieldGet2(_networkProberInst, _this2).stopDownlinkProbe();
+                case 5:
+                  if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
+                    _context2.next = 10;
+                    break;
+                  }
+                  _context2.next = 8;
+                  return _assertClassBrand(_NetworkAgent_brand, _this2, _genDiagnosticReport).call(_this2);
+                case 8:
+                  diagnosticReport = _context2.sent;
+                  proberObserverProxy.onReportObserver(diagnosticReport);
+                case 10:
+                  _classPrivateFieldGet2(_networkProberInst, _this2).cleanupConnections();
+                  _classPrivateFieldGet2(_networkProberInst, _this2).killKeepAliveTimer();
+                case 12:
+                case "end":
+                  return _context2.stop();
+              }
+            }, _callee2);
+          })), probingDuration);
+          _context3.next = 22;
+          break;
+        case 15:
+          if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
+            _context3.next = 20;
+            break;
+          }
+          _context3.next = 18;
+          return _assertClassBrand(_NetworkAgent_brand, this, _genDiagnosticReport).call(this);
+        case 18:
+          diagnosticReport = _context3.sent;
+          proberObserverProxy.onReportObserver(diagnosticReport);
+        case 20:
+          _classPrivateFieldGet2(_networkProberInst, this).cleanupConnections();
+          _classPrivateFieldGet2(_networkProberInst, this).killKeepAliveTimer();
+        case 22:
+        case "end":
+          return _context3.stop();
+      }
+    }, _callee3, this);
+  }));
+  return _startProbing2.apply(this, arguments);
 }
 function _genNetworkStatsEntry(path, bw, rtt, lossRate, jitter, max_continuous_loss_num, owdelay, bw_level, network_level) {
   return {
@@ -3920,25 +3996,11 @@ var RenderersProxy = /*#__PURE__*/function () {
     }
   }, {
     key: "stopPreview",
-    value: function stopPreview(options) {
-      if (!options || !options.stream) {
-        console.error("stopPreview() options is invalid: ".concat(options));
-        return false;
-      }
-      var tracks = options.stream.getTracks();
-      if (!tracks || tracks.length === 0) {
-        console.error("stopPreview() no available tracks to stop.");
-        return false;
-      }
-      tracks.forEach(function (track) {
-        track.stop();
-        options.stream.removeTrack(track);
-      });
+    value: function stopPreview() {
       if (_classPrivateFieldGet2(_mRenderer, this)) {
         _classPrivateFieldGet2(_mRenderer, this).stopPreview();
       }
       _classPrivateFieldSet2(_mRenderer, this, null);
-      options.stream = null;
       return true;
     }
   }], [{
@@ -4148,6 +4210,7 @@ var Prober = /*#__PURE__*/function () {
      * @typedef {object} DiagnosticResult
      * @property {number} code an error code defined by {@link ERR_CODE}.
      * @property {string} message an error message.
+     * @property {MediaStream} stream a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.
      */
     /**
      * Performs audio diagnostic by recording audio from an input device and playing it through an output device.
@@ -4272,7 +4335,6 @@ var Prober = /*#__PURE__*/function () {
      * @typedef {object} RendererOptions
      * @property {number} rendererType the renderer type, refer to the values of {@link RENDERER_TYPE}.
      * @property {HTMLMediaElement|HTMLCanvasElement|OffscreenCanvas} target where to render a video stream.
-     * @property {MediaStream} stream a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.
      */
 
     /**
@@ -4280,8 +4342,8 @@ var Prober = /*#__PURE__*/function () {
      * You can select a camera by setting {@link constraints} and different renderer type by setting the parameter {@link options}.
      * Four renderer types are supported by ProbeSDK. Please refer to the documentation of {@link RENDERER_TYPE}.
      *
-     * Once the video diagnostic is launched, a {@link MediaStream} object is created and appended to the {@link RendererOptions} as an extended field `stream`.
-     * It is optional but necessary when you want to stop the video diagnostic, if not stopping it, the camera capturing currently is always working.
+     * Once the video diagnostic is launched, a {@link MediaStream} object is saved to the field `stream` of {@link DiagnosticResult}.
+     * It is necessary when you want to stop the video diagnostic, if not stopping it, the camera capturing currently is always working.
      *
      * Different renderer types require different {@link RendererOptions}:
      * - VIDEO_TAG requires a video element({@link HTMLMediaElement})
@@ -4297,7 +4359,7 @@ var Prober = /*#__PURE__*/function () {
      * @example
      * // for video tag case, you can:
      * // in your html file, to define a video tag
-     * <video id="local_preview_video" width="640" height="480" style="background: gainsboro;" autoplay hidden></video>
+     * <video id="local_preview_video" width="640" height="480" autoplay hidden></video>
      *
      * const preview_video = document.getElementById('local_preview_video');
      * const constraints = {
@@ -4334,134 +4396,119 @@ var Prober = /*#__PURE__*/function () {
      *   target: preview_canvas,
      * };
      *
-     * const diagnosticResult = await prober.diagnoseVideo(constraints, options);
-     * console.log(diagnosticResult);
+     * const result = await prober.diagnoseVideo(constraints, options);
+     * console.log(result);
      */
   }, {
     key: "diagnoseVideo",
     value: (function () {
-      var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(constraints, options) {
-        var diagnosticResult, isRendererTypeSupported, isTypeCheckPass, areTypesCheckPass, rendersProxy;
-        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+      var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(constraints, options) {
+        var isRendererTypeSupported, allowedTargetTypes, isTargetTypeValid, diagnosticResult, stream, video, videoTrack, settings, videoAspectRatio, canvasAspect, drawWidth, drawHeight, offsetX, offsetY, viewport, rendersProxy;
+        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
             case 0:
-              if (!(constraints == undefined || options == undefined)) {
-                _context4.next = 2;
+              if (!(!constraints || !options)) {
+                _context3.next = 2;
                 break;
               }
               throw new Error("Invalid arguments. constraints:".concat(constraints, ", options:").concat(options));
             case 2:
+              _context3.next = 4;
+              return _assertClassBrand(_Prober_brand, this, _isRendererTypeSupported).call(this, options.rendererType);
+            case 4:
+              isRendererTypeSupported = _context3.sent;
+              if (isRendererTypeSupported) {
+                _context3.next = 7;
+                break;
+              }
+              return _context3.abrupt("return", {
+                code: ERR_CODE.API_NOT_SUPPORTED,
+                message: "Not Supported renderer type. (arg)options.rendererType:".concat(options.rendererType)
+              });
+            case 7:
+              allowedTargetTypes = options.rendererType === RENDERER_TYPE.VIDEO_TAG ? [HTMLMediaElement] : [HTMLCanvasElement, OffscreenCanvas];
+              isTargetTypeValid = _assertClassBrand(_Prober_brand, this, _checkArgTypes).call(this, options.target, allowedTargetTypes);
+              if (isTargetTypeValid) {
+                _context3.next = 11;
+                break;
+              }
+              return _context3.abrupt("return", {
+                code: ERR_CODE.INVALID_ARGS,
+                message: "Invalid target type. (arg)options.target:".concat(options.target)
+              });
+            case 11:
               diagnosticResult = {
                 code: ERR_CODE.OK,
-                message: "video diagnostic is started!"
+                message: "Video diagnostic is started!",
+                stream: null
               };
-              _context4.next = 5;
-              return _assertClassBrand(_Prober_brand, this, _isRendererTypeSupported).call(this, options.rendererType);
-            case 5:
-              isRendererTypeSupported = _context4.sent;
-              if (isRendererTypeSupported) {
-                _context4.next = 10;
-                break;
-              }
-              diagnosticResult.code = ERR_CODE.API_NOT_SUPPORTED;
-              diagnosticResult.message = "Not Supported renderer type. (arg)options.rendererType:".concat(options.rendererType);
-              return _context4.abrupt("return", diagnosticResult);
-            case 10:
+              _context3.prev = 12;
+              _context3.next = 15;
+              return navigator.mediaDevices.getUserMedia(constraints);
+            case 15:
+              stream = _context3.sent;
+              diagnosticResult.stream = stream;
               if (!(options.rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                _context4.next = 18;
+                _context3.next = 21;
                 break;
               }
-              isTypeCheckPass = _assertClassBrand(_Prober_brand, this, _checkArgTypes).call(this, options.target, [HTMLMediaElement]);
-              if (isTypeCheckPass) {
-                _context4.next = 16;
-                break;
-              }
-              diagnosticResult.code = ERR_CODE.INVALID_ARGS;
-              diagnosticResult.message = "Invalid target type. (arg)options.target:".concat(options.target);
-              return _context4.abrupt("return", diagnosticResult);
-            case 16:
-              _context4.next = 29;
+              // Render stream to a video element
+              options.target.srcObject = stream;
+              _context3.next = 39;
               break;
-            case 18:
+            case 21:
               if (!(options.rendererType === RENDERER_TYPE.WEBGL || options.rendererType === RENDERER_TYPE.WEBGL_2 || options.rendererType === RENDERER_TYPE.WEBGPU)) {
-                _context4.next = 26;
+                _context3.next = 39;
                 break;
               }
-              areTypesCheckPass = _assertClassBrand(_Prober_brand, this, _checkArgTypes).call(this, options.target, [HTMLCanvasElement, OffscreenCanvas]);
-              if (areTypesCheckPass) {
-                _context4.next = 24;
-                break;
+              // Create a video element as the source seeding to a canvas for rendering
+              video = document.createElement("video");
+              video.width = options.target.width;
+              video.height = options.target.height;
+              video.loop = true;
+              video.autoplay = true;
+              video.muted = true;
+              video.srcObject = stream;
+              _context3.next = 31;
+              return video.play();
+            case 31:
+              videoTrack = stream.getVideoTracks()[0];
+              settings = videoTrack.getSettings();
+              videoAspectRatio = settings.aspectRatio || settings.width / settings.height;
+              canvasAspect = options.target.width / options.target.height;
+              if (canvasAspect > videoAspectRatio) {
+                drawHeight = options.target.height;
+                drawWidth = options.target.height * videoAspectRatio;
+                offsetX = (options.target.width - drawWidth) / 2;
+                offsetY = 0;
+              } else {
+                drawWidth = options.target.width;
+                drawHeight = options.target.width / videoAspectRatio;
+                offsetX = 0;
+                offsetY = (options.target.height - drawHeight) / 2;
               }
-              diagnosticResult.code = ERR_CODE.INVALID_ARGS;
-              diagnosticResult.message = "Invalid target type. (arg)options.target:".concat(options.target);
-              return _context4.abrupt("return", diagnosticResult);
-            case 24:
-              _context4.next = 29;
-              break;
-            case 26:
-              diagnosticResult.code = ERR_CODE.INVALID_ARGS;
-              diagnosticResult.message = "Invalid renderer type. (arg)type:".concat(options.rendererType);
-              return _context4.abrupt("return", diagnosticResult);
-            case 29:
+              viewport = {
+                x: offsetX,
+                y: offsetY,
+                w: drawWidth,
+                h: drawHeight
+              };
               rendersProxy = RenderersProxy.getInstance();
-              navigator.mediaDevices.getUserMedia(constraints).then( /*#__PURE__*/function () {
-                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(stream) {
-                  var video, viewport;
-                  return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-                    while (1) switch (_context3.prev = _context3.next) {
-                      case 0:
-                        if (!(options.rendererType == RENDERER_TYPE.VIDEO_TAG)) {
-                          _context3.next = 5;
-                          break;
-                        }
-                        // render stream to a video element
-                        options.target.srcObject = stream;
-                        options.stream = stream;
-                        _context3.next = 18;
-                        break;
-                      case 5:
-                        if (!(options.rendererType == RENDERER_TYPE.WEBGL || options.rendererType == RENDERER_TYPE.WEBGL_2 || options.rendererType == RENDERER_TYPE.WEBGPU)) {
-                          _context3.next = 18;
-                          break;
-                        }
-                        // create a video element as the source seeding to a canvas for rendering
-                        options.stream = stream;
-                        video = document.createElement("video");
-                        video.width = options.target.width;
-                        video.height = options.target.height;
-                        video.loop = true;
-                        video.autoplay = true;
-                        video.muted = true;
-                        video.srcObject = stream;
-                        _context3.next = 16;
-                        return video.play();
-                      case 16:
-                        // use canvas as the viewport
-                        viewport = {
-                          x: 0,
-                          y: 0,
-                          w: options.target.width,
-                          h: options.target.height
-                        };
-                        rendersProxy.preview(options.rendererType, video, options.target, viewport);
-                      case 18:
-                      case "end":
-                        return _context3.stop();
-                    }
-                  }, _callee3);
-                }));
-                return function (_x4) {
-                  return _ref.apply(this, arguments);
-                };
-              }()).catch(function (e) {
-                throw e;
+              rendersProxy.preview(options.rendererType, video, options.target, viewport);
+            case 39:
+              return _context3.abrupt("return", diagnosticResult);
+            case 42:
+              _context3.prev = 42;
+              _context3.t0 = _context3["catch"](12);
+              return _context3.abrupt("return", {
+                code: ERR_CODE.UNKNOWN_ERROR,
+                message: "Failed to start video diagnostic. Error: ".concat(error.message)
               });
-              return _context4.abrupt("return", diagnosticResult);
-            case 32:
+            case 45:
             case "end":
-              return _context4.stop();
+              return _context3.stop();
           }
-        }, _callee4, this);
+        }, _callee3, this, [[12, 42]]);
       }));
       function diagnoseVideo(_x2, _x3) {
         return _diagnoseVideo.apply(this, arguments);
@@ -4471,34 +4518,31 @@ var Prober = /*#__PURE__*/function () {
     /**
      * Stops the video diagnostic that was started by the {@link diagnoseVideo} method.
      *
-     * Once the video diagnostic is launched, an object of {@link RendererOptions} is passed to the function {@link diagnoseVideo}.
-     * A {@link MediaStream} object is set to the object of {@link RendererOptions} that is used to stop the video diagnostic here.
-     * Each {@link MediaStreamTrack} will be stopped and removed from the stream.
-     *
-     * The frontend or any caller should pass the same object of {@link RendererOptions} and do extra work after the video diagnostic is stopped,
-     * like removing the video element or the canvas on the screen.
+     * The frontend or any caller can pass the {@link MediaStream} of {@link DiagnosticResult} to stop video diagnostic,
+     * like removing the video element or the canvas on the screen are necessary actions too. Note that, you can still
+     * call {@link releaseMediaStream} to manually destroy the {@link MediaStream}.
      *
      * @function stopToDiagnoseVideo
-     * @param {RendererOptions} options The options of how to render a video stream, includes the a renderer type and a target where to render.
+     * @param {MediaStream} [stream=null] The {@link MediaStream} which will be destroyed.
      * @returns {boolean} Returns true if the video diagnostic is stopped successfully, otherwise returns false.
      *
      * @example
      * document.getElementById("btn_stop_preview").addEventListener("click", () =>{
-     *  let result = prober.stopToDiagnoseVideo(diagnoseVideoOptions);
-     *  diagnoseVideoOptions = null;
+     *  let result = prober.stopToDiagnoseVideo(stream); // stream saved in the result of calling diagnoseVideo()
      *  console.log(`stopToDiagnoseVideo() result: ${result}`);
      * });
      */
     )
   }, {
     key: "stopToDiagnoseVideo",
-    value: function stopToDiagnoseVideo(options) {
-      if (!options) {
-        console.error("stopToDiagnoseVideo() options is null! Cannot stop to diagnose video.");
-        return false;
+    value: function stopToDiagnoseVideo() {
+      var stream = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+      if (stream) {
+        var result = this.releaseMediaStream(stream);
+        console.log("stopToDiagnoseVideo() release media stream result:".concat(result));
       }
       var rendersProxy = RenderersProxy.getInstance();
-      return rendersProxy.stopPreview(options);
+      return rendersProxy.stopPreview();
     }
 
     /**
@@ -4643,7 +4687,7 @@ var Prober = /*#__PURE__*/function () {
      * @example
      * const jsUrl = 'prober.js';
      * const wasmUrl = 'prober.wasm';
-     * const config = { probeDuration: 120 * 1000, connectTimeout: 20 * 1000, domain: 'zoomdev.us' };
+     * const config = { probeDuration: 120 * 1000, connectTimeout: 20 * 1000, domain: '[a Zoom or custom domain]' };
      * prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
      *  console.log(stats);
      * }).then((report) => {
@@ -4690,6 +4734,19 @@ var Prober = /*#__PURE__*/function () {
     value: function queryRid() {
       return _classPrivateFieldGet2(_networkAgent, this).queryRid();
     }
+
+    /**
+     * Cleanup the resources created in ProbeSDK, like network connections, rendering resources, etc.
+     * 
+     * @function cleanup
+     * @example
+     * prober.cleanup();
+     */
+  }, {
+    key: "cleanup",
+    value: function cleanup() {
+      _classPrivateFieldGet2(_networkAgent, this).cleanup();
+    }
   }]);
 }();
 function _checkArgTypes(arg, types) {
@@ -4702,74 +4759,74 @@ function _checkArgTypes(arg, types) {
   }
   return hasOneTypePassCheck;
 }
-function _isRendererTypeSupported(_x5) {
+function _isRendererTypeSupported(_x4) {
   return _isRendererTypeSupported2.apply(this, arguments);
 }
 function _isRendererTypeSupported2() {
-  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
-    return _regeneratorRuntime().wrap(function _callee6$(_context6) {
-      while (1) switch (_context6.prev = _context6.next) {
+  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(rendererType) {
+    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+      while (1) switch (_context5.prev = _context5.next) {
         case 0:
-          return _context6.abrupt("return", new Promise( /*#__PURE__*/function () {
-            var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
+          return _context5.abrupt("return", new Promise( /*#__PURE__*/function () {
+            var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(resolve) {
               var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
-              return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-                while (1) switch (_context5.prev = _context5.next) {
+              return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+                while (1) switch (_context4.prev = _context4.next) {
                   case 0:
                     if (!(rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                      _context5.next = 4;
+                      _context4.next = 4;
                       break;
                     }
                     resolve(true);
-                    _context5.next = 22;
+                    _context4.next = 22;
                     break;
                   case 4:
                     if (!(rendererType === RENDERER_TYPE.WEBGL)) {
-                      _context5.next = 9;
+                      _context4.next = 9;
                       break;
                     }
                     isWebGLSupported = Feature.isWebGLSupported();
                     resolve(isWebGLSupported);
-                    _context5.next = 22;
+                    _context4.next = 22;
                     break;
                   case 9:
                     if (!(rendererType === RENDERER_TYPE.WEBGL_2)) {
-                      _context5.next = 14;
+                      _context4.next = 14;
                       break;
                     }
                     isWebGL2Supported = Feature.isWebGL2Supported();
                     resolve(isWebGL2Supported);
-                    _context5.next = 22;
+                    _context4.next = 22;
                     break;
                   case 14:
                     if (!(rendererType === RENDERER_TYPE.WEBGPU)) {
-                      _context5.next = 21;
+                      _context4.next = 21;
                       break;
                     }
-                    _context5.next = 17;
+                    _context4.next = 17;
                     return Feature.isWebGPUSupported();
                   case 17:
-                    isWebGPUSupported = _context5.sent;
+                    isWebGPUSupported = _context4.sent;
                     resolve(isWebGPUSupported);
-                    _context5.next = 22;
+                    _context4.next = 22;
                     break;
                   case 21:
                     resolve(false);
                   case 22:
                   case "end":
-                    return _context5.stop();
+                    return _context4.stop();
                 }
-              }, _callee5);
+              }, _callee4);
             }));
-            return function (_x6) {
-              return _ref2.apply(this, arguments);
+            return function (_x5) {
+              return _ref.apply(this, arguments);
             };
           }()));
         case 1:
         case "end":
-          return _context6.stop();
+          return _context5.stop();
       }
-    }, _callee6);
+    }, _callee5);
   }));
   return _isRendererTypeSupported2.apply(this, arguments);
 }
