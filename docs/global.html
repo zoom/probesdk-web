@@ -2118,6 +2118,94 @@ It will be used to determine the type of data you received and how to handle the
     
 
     
+    <h4 class="name" id="cleanup"><span class="type-signature"></span>cleanup<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Cleanup the resources created in ProbeSDK, like network connections, rendering resources, etc.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>prober.cleanup();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="diagnoseAudio"><span class="type-signature"></span>diagnoseAudio<span class="signature">(inputConstraints, outputConstraints, duration<span class="signature-attributes">opt</span>, mimeType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="global.html#DiagnosticResult">DiagnosticResult</a>}</span></h4>
     
 
@@ -2469,8 +2557,8 @@ try {
     <p>Diagnose video device like camera and show the result on a renderable object.
 You can select a camera by setting constraints and different renderer type by setting the parameter options.
 Four renderer types are supported by ProbeSDK. Please refer to the documentation of <a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a>.</p>
-<p>Once the video diagnostic is launched, a MediaStream object is created and appended to the <a href="global.html#RendererOptions">RendererOptions</a> as an extended field <code>stream</code>.
-It is optional but necessary when you want to stop the video diagnostic, if not stopping it, the camera capturing currently is always working.</p>
+<p>Once the video diagnostic is launched, a MediaStream object is saved to the field <code>stream</code> of <a href="global.html#DiagnosticResult">DiagnosticResult</a>.
+It is necessary when you want to stop the video diagnostic, if not stopping it, the camera capturing currently is always working.</p>
 <p>Different renderer types require different <a href="global.html#RendererOptions">RendererOptions</a>:</p>
 <ul>
 <li>VIDEO_TAG requires a video element(HTMLMediaElement)</li>
@@ -2670,7 +2758,7 @@ It is optional but necessary when you want to stop the video diagnostic, if not 
     
     <pre class="prettyprint"><code>// for video tag case, you can:
 // in your html file, to define a video tag
-&lt;video id="local_preview_video" width="640" height="480" style="background: gainsboro;" autoplay hidden>&lt;/video>
+&lt;video id="local_preview_video" width="640" height="480" autoplay hidden>&lt;/video>
 
 const preview_video = document.getElementById('local_preview_video');
 const constraints = {
@@ -2707,8 +2795,8 @@ const options = {
   target: preview_canvas,
 };
 
-const diagnosticResult = await prober.diagnoseVideo(constraints, options);
-console.log(diagnosticResult);</code></pre>
+const result = await prober.diagnoseVideo(constraints, options);
+console.log(result);</code></pre>
 
 
 
@@ -3877,7 +3965,7 @@ If you set the time too short, the results of the network diagnosis will not be 
     
     <pre class="prettyprint"><code>const jsUrl = 'prober.js';
 const wasmUrl = 'prober.wasm';
-const config = { probeDuration: 120 * 1000, connectTimeout: 20 * 1000, domain: 'zoomdev.us' };
+const config = { probeDuration: 120 * 1000, connectTimeout: 20 * 1000, domain: '[a Zoom or custom domain]' };
 prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
  console.log(stats);
 }).then((report) => {
@@ -3892,7 +3980,7 @@ prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
     
 
     
-    <h4 class="name" id="stopToDiagnoseVideo"><span class="type-signature"></span>stopToDiagnoseVideo<span class="signature">(options)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    <h4 class="name" id="stopToDiagnoseVideo"><span class="type-signature"></span>stopToDiagnoseVideo<span class="signature">(stream<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
     
 
     
@@ -3901,11 +3989,9 @@ prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
 
 <div class="description">
     <p>Stops the video diagnostic that was started by the <a href="global.html#diagnoseVideo">diagnoseVideo</a> method.</p>
-<p>Once the video diagnostic is launched, an object of <a href="global.html#RendererOptions">RendererOptions</a> is passed to the function <a href="global.html#diagnoseVideo">diagnoseVideo</a>.
-A MediaStream object is set to the object of <a href="global.html#RendererOptions">RendererOptions</a> that is used to stop the video diagnostic here.
-Each MediaStreamTrack will be stopped and removed from the stream.</p>
-<p>The frontend or any caller should pass the same object of <a href="global.html#RendererOptions">RendererOptions</a> and do extra work after the video diagnostic is stopped,
-like removing the video element or the canvas on the screen.</p>
+<p>The frontend or any caller can pass the MediaStream of <a href="global.html#DiagnosticResult">DiagnosticResult</a> to stop video diagnostic,
+like removing the video element or the canvas on the screen are necessary actions too. Note that, you can still
+call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually destroy the MediaStream.</p>
 </div>
 
 
@@ -3929,7 +4015,11 @@ like removing the video element or the canvas on the screen.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -3941,23 +4031,39 @@ like removing the video element or the canvas on the screen.</p>
 
         <tr>
             
-                <td class="name"><code>options</code></td>
+                <td class="name"><code>stream</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#RendererOptions">RendererOptions</a></span>
+<span class="param-type">MediaStream</span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last"><p>The options of how to render a video stream, includes the a renderer type and a target where to render.</p></td>
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"><p>The MediaStream which will be destroyed.</p></td>
         </tr>
 
     
@@ -4047,8 +4153,7 @@ like removing the video element or the canvas on the screen.</p>
     <h5>Example</h5>
     
     <pre class="prettyprint"><code>document.getElementById("btn_stop_preview").addEventListener("click", () =>{
- let result = prober.stopToDiagnoseVideo(diagnoseVideoOptions);
- diagnoseVideoOptions = null;
+ let result = prober.stopToDiagnoseVideo(stream); // stream saved in the result of calling diagnoseVideo()
  console.log(`stopToDiagnoseVideo() result: ${result}`);
 });</code></pre>
 
@@ -5354,6 +5459,29 @@ like removing the video element or the canvas on the screen.</p>
             
 
             <td class="description last"><p>an error message.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>stream</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">MediaStream</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.</p></td>
         </tr>
 
     
@@ -7596,29 +7724,6 @@ like removing the video element or the canvas on the screen.</p>
         </tr>
 
     
-
-        <tr>
-            
-                <td class="name"><code>stream</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">MediaStream</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.</p></td>
-        </tr>
-
-    
     </tbody>
 </table>
 
@@ -7679,13 +7784,13 @@ like removing the video element or the canvas on the screen.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Probe SDK Reference</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#releaseMediaStream">releaseMediaStream</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
+    <h2><a href="index.html">Probe SDK Reference</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#cleanup">cleanup</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#releaseMediaStream">releaseMediaStream</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Thu Dec 05 2024 10:26:36 GMT+0800 (China Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Mar 01 2025 15:29:07 GMT+0800 (China Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
