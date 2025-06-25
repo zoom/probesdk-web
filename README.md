@@ -86,7 +86,7 @@ function getMediaDevices() {
 
 ## Diagnose audio and video
 
-Invoke `diagnoseAudio` to check whether the audio devices work.
+Invoke `diagnoseAudio` to check whether the audio devices work. For Audio diagnostics the ProbeSDK only provides diagnostics on the operational status of your selected microphone and headset, e.g. whether you can hear from the headset, or whether the microphone inputs are working properly, etc. The ProbeSDK also provides diagnostics for the microphone and headset. Therefore, the return result of the function call only indicates whether the Audio Diagnostics program was successfully started or not, and if it failed, it returns the corresponding error code and reason.
 
 ```javascript
 // index.js
@@ -196,7 +196,13 @@ function startToDiagnose() {
 }
 ```
 
-When the diagnostic program is finished, we suggest that it is a good idea to call the `cleanup()` function to clean up some of the resources created in ProbeSDK (e.g., some memory resources, closing the network connection used for diagnostics, etc.). For example, it is a good time to call it when the user closes the diagnostics page or jumps to another page.
+Once the diagnostic program is started, it will run for the time you set or for a fixed length of time. If you want to stop this diagnostic program voluntarily, you can call the `stopToDiagnose()` function to stop the diagnostic program. Please see the following example.
+```javascript
+const report = await prober.stopToDiagnose();
+console.log('Diagnostic stopped, partial report:', report);
+```
+
+When the diagnostic program is finished, we suggest that it is a good idea to call the `cleanup()` function to clean up some of the resources created in ProbeSDK (e.g., some memory resources, closing the network connection used for diagnostics, etc.). For example, it is a good time to call it when the user closes the diagnostics page or jumps to another page. It doesn't matter if you don't call it, the diagnostics program will actively clean up some of the used resources after it finishes.
 
 ```javascript
 prober.cleanup();
@@ -401,6 +407,27 @@ Some licenses for OSS contained in our products give you the right to access the
   </tr>
   <tr>
     <th rowspan="1">startToDiagnose</th>
+  	<th>Y(125 64-bit)</th>
+    <th>Y(125.0.1 64-bit)</th>
+    <th>Y(124 64-bit)</th>
+    <th>Y(110 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(126.0.1 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(110 64-bit)</th>
+    <th>Y(17.5)</th>
+    <th>Y(113 64-bit)</th>
+    <th>Y(114.0 64-bit)</th>
+    <th>Y(124 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(125)</th>
+    <th>Y(17.5)</th>
+    <th>Y(126.2)</th>
+  </tr>
+  <tr>
+    <th rowspan="1">stopToDiagnose</th>
   	<th>Y(125 64-bit)</th>
     <th>Y(125.0.1 64-bit)</th>
     <th>Y(124 64-bit)</th>

@@ -1,7 +1,7 @@
 {
   "name": "@zoom/probesdk",
   "package-name": "probesdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Zoom ProbeSDK tests the end user device and network capabilities, and the Zoom server connection.",
   "author": "Zoom Video Communications, Inc.",
   "contributors": [

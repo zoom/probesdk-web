@@ -656,6 +656,52 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>SHARED_ARRAY_BUFFER</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>represents the SharedArrayBuffer. Default value is 14.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>BUILD_BITNESS</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>represents the build bitness(32bit or 64bit). Default value is 15.</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -2111,6 +2157,160 @@ It will be used to determine the type of data you received and how to handle the
 
     
         <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="canSupportStringLength"><span class="type-signature"></span>canSupportStringLength<span class="signature">(len)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Test whether can allocate a string of a given length.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>len</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>a length of string to be allocated.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>true if the string can be allocated, false otherwise.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
 
         
             
@@ -3971,6 +4171,128 @@ prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
 }).then((report) => {
  console.log(report);
 });</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="stopToDiagnose"><span class="type-signature">(async) </span>stopToDiagnose<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;(<a href="global.html#DiagnosticReport">DiagnosticReport</a>|null)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Stop the ongoing network diagnostic that was initiated by the <a href="global.html#startToDiagnose">startToDiagnose</a> method.</p>
+<p>This function will immediately stop all network probing activities, cleanup all resources including
+network connections, timers, and WebAssembly instances. If a diagnostic is currently running,
+it will generate a final report with the data collected up to the point of stopping.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves to a diagnostic report with the data collected before stopping, or null if no diagnostic was running.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(<a href="global.html#DiagnosticReport">DiagnosticReport</a>|null)></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Start diagnostic
+const diagnosticPromise = prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
+  console.log(stats);
+});
+
+// Stop diagnostic after 30 seconds
+setTimeout(async () => {
+  const partialReport = await prober.stopToDiagnose();
+  console.log('Diagnostic stopped, partial report:', partialReport);
+}, 30000);</code></pre>
 
 
 
@@ -7784,13 +8106,13 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
 </div>
 
 <nav>
-    <h2><a href="index.html">Probe SDK Reference</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#cleanup">cleanup</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#releaseMediaStream">releaseMediaStream</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
+    <h2><a href="index.html">Probe SDK Reference</a></h2><h3>Classes</h3><ul><li><a href="Prober.html">Prober</a></li><li><a href="Reporter.html">Reporter</a></li></ul><h3>Global</h3><ul><li><a href="global.html#BANDWIDTH_QUALITY_LEVEL">BANDWIDTH_QUALITY_LEVEL</a></li><li><a href="global.html#BASIC_INFO_ATTR_INDEX">BASIC_INFO_ATTR_INDEX</a></li><li><a href="global.html#DEF_CONNECT_TIMEOUT">DEF_CONNECT_TIMEOUT</a></li><li><a href="global.html#DEF_PROBE_DURATION">DEF_PROBE_DURATION</a></li><li><a href="global.html#ERR_CODE">ERR_CODE</a></li><li><a href="global.html#NETWORK_QUALITY_LEVEL">NETWORK_QUALITY_LEVEL</a></li><li><a href="global.html#NET_PROBING_DATA_TYPE">NET_PROBING_DATA_TYPE</a></li><li><a href="global.html#PROTOCOL_TYPE">PROTOCOL_TYPE</a></li><li><a href="global.html#RENDERER_TYPE">RENDERER_TYPE</a></li><li><a href="global.html#SUPPORTED_FEATURE_INDEX">SUPPORTED_FEATURE_INDEX</a></li><li><a href="global.html#canSupportStringLength">canSupportStringLength</a></li><li><a href="global.html#cleanup">cleanup</a></li><li><a href="global.html#diagnoseAudio">diagnoseAudio</a></li><li><a href="global.html#diagnoseVideo">diagnoseVideo</a></li><li><a href="global.html#queryRid">queryRid</a></li><li><a href="global.html#releaseMediaStream">releaseMediaStream</a></li><li><a href="global.html#reportBasicInfo">reportBasicInfo</a></li><li><a href="global.html#reportFeatures">reportFeatures</a></li><li><a href="global.html#requestMediaDevicePermission">requestMediaDevicePermission</a></li><li><a href="global.html#requestMediaDevices">requestMediaDevices</a></li><li><a href="global.html#startToDiagnose">startToDiagnose</a></li><li><a href="global.html#stopToDiagnose">stopToDiagnose</a></li><li><a href="global.html#stopToDiagnoseVideo">stopToDiagnoseVideo</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Mar 01 2025 15:29:07 GMT+0800 (China Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jun 14 2025 17:40:33 GMT+0800 (China Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
