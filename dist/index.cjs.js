@@ -329,6 +329,15 @@ function _toPropertyKey(t) {
   var i = _toPrimitive(t, "string");
   return "symbol" == typeof i ? i : i + "";
 }
+function _typeof(o) {
+  "@babel/helpers - typeof";
+
+  return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+    return typeof o;
+  } : function (o) {
+    return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
+  }, _typeof(o);
+}
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
   try {
     var info = gen[key](arg);
@@ -605,6 +614,8 @@ var BANDWIDTH_QUALITY_LEVEL = {
  * @property {number} HW_ACC represents the hardware acceleration. Default value is 11.
  * @property {number} GRAPHICS_ACC represents the graphics acceleration in chromium system settings. Default value is 12.
  * @property {number} MIN_BROWSER_VERSION represents the minimum browser version. Default value is 13.
+ * @property {number} SHARED_ARRAY_BUFFER represents the SharedArrayBuffer. Default value is 14.
+ * @property {number} BUILD_BITNESS represents the build bitness(32bit or 64bit). Default value is 15.
  * @constant
  */
 var BASIC_INFO_ATTR_INDEX = {
@@ -622,7 +633,9 @@ var BASIC_INFO_ATTR_INDEX = {
   WEB_CODEC: 11,
   HW_ACC: 12,
   GRAPHICS_ACC: 13,
-  MIN_BROWSER_VERSION: 14
+  MIN_BROWSER_VERSION: 14,
+  SHARED_ARRAY_BUFFER: 15,
+  BUILD_BITNESS: 16
 };
 
 /**
@@ -713,6 +726,19 @@ function readValueFromLocalStorage(key) {
   return localStorage.getItem(key);
 }
 
+/**
+ * Test whether can allocate a string of a given length.
+ * @param {Number} len a length of string to be allocated. 
+ * @returns {boolean} true if the string can be allocated, false otherwise.
+ */
+function canSupportStringLength(len) {
+  try {
+    return new Array(len + 1).join('x').length === len;
+  } catch (e) {
+    return false;
+  }
+}
+
 var GLOBAL_SEQ = 1;
 var KEY_RID = "probing_rid";
 function base64ToBytes(base64) {
@@ -801,6 +827,9 @@ function js_report_qos_info(prober_instance, bandwidth, rate, loss_rate, max_con
   var uplink_rate = rate / 1024 / 1024;
   var uplink_owdelay = max_owdelay;
   var uplink_jitter = jitter;
+  if (isDebugMode()) {
+    console.log("js_report_qos_info: uplink_bandwidth=".concat(uplink_bandwidth, ", uplink_rtt=").concat(uplink_rtt, ", count=").concat(prober_instance === null || prober_instance === void 0 ? void 0 : prober_instance.uplink_count));
+  }
   if (prober_instance) {
     prober_instance.on_uplink_report({
       bandwidth: uplink_bandwidth,
@@ -820,6 +849,8 @@ function js_report_qos_info(prober_instance, bandwidth, rate, loss_rate, max_con
     prober_instance.last_ul_bw = uplink_bandwidth;
     prober_instance.last_ul_bw_level = bw_level;
     prober_instance.last_ul_network_level = app_score;
+  } else {
+    console.error("js_report_qos_info: prober_instance is null or undefined!");
   }
 }
 function wcl_trace_log(a, b) {
@@ -881,6 +912,9 @@ var NetworkProberInst = /*#__PURE__*/function () {
       js_send_data(prober_instance, buffer, len, send_by_data);
     };
     window.js_report_qos_info = function (bandwidth, rate, loss_rate, max_continuous_loss_num, rtt, max_owdelay, jitter, app_score, bw_level) {
+      if (isDebugMode()) {
+        console.log("js_report_qos_info called: bandwidth=".concat(bandwidth, ", app_score=").concat(app_score, ", bw_level=").concat(bw_level));
+      }
       js_report_qos_info(prober_instance, bandwidth, rate, loss_rate, max_continuous_loss_num, rtt, max_owdelay, jitter, app_score, bw_level);
     };
     this.downlink_count = 0;
@@ -1058,18 +1092,21 @@ var NetworkProberInst = /*#__PURE__*/function () {
               this.connectionId = connectionId;
               this.index = index;
               this.cmdMessageRegister();
-              if (!this.prober) {
-                this.prober = this.api.create_prober();
+
+              // Always create a new prober instance to ensure clean state
+              if (this.prober) {
+                this.api.destroy_prober(this.prober);
               }
+              this.prober = this.api.create_prober();
 
               // 2. Media websocket works as the backup of the data channel if fails
               mediaUrl = "wss://".concat(this.probeServerDomain, "/media/?cid=").concat(this.connectionId, "&index=").concat(this.index);
-              _context.next = 75;
+              _context.next = 76;
               return connectWebSocket(mediaUrl);
-            case 75:
+            case 76:
               mediaChannelResult = _context.sent;
               if (mediaChannelResult.result) {
-                _context.next = 82;
+                _context.next = 83;
                 break;
               }
               if (mediaChannelResult.socket) {
@@ -1077,18 +1114,18 @@ var NetworkProberInst = /*#__PURE__*/function () {
               }
               this.wssProtocol = this.assembleProtocolResult(PROTOCOL_TYPE.WEB_SOCKET, true, "", "", mediaChannelResult.error);
               return _context.abrupt("return", false);
-            case 82:
+            case 83:
               if (this.wssProtocol == undefined || this.wssProtocol.isBlocked) {
                 this.wssProtocol = this.assembleProtocolResult(PROTOCOL_TYPE.WEB_SOCKET, false);
               }
-            case 83:
+            case 84:
               this.mediaSocket = mediaChannelResult.socket;
               this.mediaMessageRegister();
 
               // 3. Try to connect data channel
-              _context.next = 87;
+              _context.next = 88;
               return this.connectDataChannel(timeout);
-            case 87:
+            case 88:
               isDataChannelEstablished = _context.sent;
               if (!isDataChannelEstablished) {
                 this.dataChannelProtocol = this.assembleProtocolResult(PROTOCOL_TYPE.DATA_CHANNEL, true, "8801", "Please check the network connectivity and the port which might be blocked", cmdChannelResult.error);
@@ -1098,16 +1135,16 @@ var NetworkProberInst = /*#__PURE__*/function () {
                 }
               }
               return _context.abrupt("return", true);
-            case 92:
-              _context.prev = 92;
+            case 93:
+              _context.prev = 93;
               _context.t1 = _context["catch"](0);
               console.error("Error connecting:", _context.t1);
               return _context.abrupt("return", false);
-            case 96:
+            case 97:
             case "end":
               return _context.stop();
           }
-        }, _callee, this, [[0, 92], [23, 50, 53, 56]]);
+        }, _callee, this, [[0, 93], [23, 50, 53, 56]]);
       }));
       function connect(_x2) {
         return _connect.apply(this, arguments);
@@ -1118,11 +1155,17 @@ var NetworkProberInst = /*#__PURE__*/function () {
     key: "startUplinkProbe",
     value: function () {
       var _startUplinkProbe = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var workerScript, blob, count, interval, probeTime, prober_instance;
+        var workerScript, blob, count, interval, probeTime, maxCount, prober_instance;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
-              console.log("startUplinkProbe");
+              if (this.prober) {
+                _context2.next = 3;
+                break;
+              }
+              console.error("startUplinkProbe: prober instance is null!");
+              return _context2.abrupt("return");
+            case 3:
               if (!this.worker) {
                 workerScript = "\n        var worker_active = false;\n\n        setInterval(() => {\n          if (worker_active) {\n            postMessage(worker_active);\n          }\n        }, 10);\n\n        onmessage = (e) => {\n          worker_active = e.data;\n        };\n      ";
                 blob = new Blob([workerScript], {
@@ -1135,16 +1178,22 @@ var NetworkProberInst = /*#__PURE__*/function () {
               this.worker.postMessage(true);
               this.api.prober_start_send(this.prober);
               count = 0;
-              interval = 0;
-              probeTime = 300 * 1000;
-              prober_instance = this;
+              interval = 10; // Worker sends message every 10ms
+              probeTime = 300 * 1000; // 300 seconds
+              maxCount = probeTime / interval; // 30000
+              prober_instance = this; // console.log(`Worker will send ${maxCount} timer calls over ${probeTime}ms`);
               this.worker.onmessage = function (event) {
-                if (count < probeTime / interval) {
+                if (count < maxCount) {
                   prober_instance.api.on_prober_timer(prober_instance.prober);
                   count += 1;
+
+                  // Log progress every 1000 calls
+                  if (count % 1000 === 0) {
+                    console.log("Uplink probe timer called ".concat(count, "/").concat(maxCount, " times"));
+                  }
                 }
               };
-            case 9:
+            case 12:
             case "end":
               return _context2.stop();
           }
@@ -1165,6 +1214,8 @@ var NetworkProberInst = /*#__PURE__*/function () {
               this.api.prober_stop_send(this.prober);
               if (this.worker) {
                 this.worker.postMessage(false);
+                this.worker.terminate();
+                this.worker = null;
               }
             case 2:
             case "end":
@@ -1581,11 +1632,70 @@ var NetworkProberInst = /*#__PURE__*/function () {
         this.videoPeer = null;
       }
       this.cleanupDataChannel();
+
+      // Clean up WebTransport connections
+      if (this.transport) {
+        try {
+          this.transport.close();
+        } catch (e) {
+          console.warn('Error closing WebTransport:', e);
+        }
+        this.transport = null;
+      }
+      if (this.writer) {
+        try {
+          this.writer.close();
+        } catch (e) {
+          console.warn('Error closing WebTransport writer:', e);
+        }
+        this.writer = null;
+      }
+
+      // Reset connection list
+      this.geoProbeConnectionList = [];
     }
   }, {
     key: "cleanup",
     value: function cleanup() {
       this.cleanupConnections();
+
+      // Clean up worker
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker = null;
+      }
+
+      // Clean up WebAssembly instance
+      if (this.prober && this.api.destroy_prober) {
+        this.api.destroy_prober(this.prober);
+        this.prober = null;
+      }
+
+      // Reset all statistics data to ensure clean state for next diagnosis
+      this.downlink_count = 0;
+      this.total_dl_rtt = 0;
+      this.total_dl_loss = 0;
+      this.total_dl_jitter = 0;
+      this.last_dl_bw = 0;
+      this.last_dl_bw_level = 255;
+      this.last_dl_network_level = 255;
+      this.uplink_count = 0;
+      this.total_ul_rtt = 0;
+      this.total_ul_loss = 0;
+      this.total_ul_jitter = 0;
+      this.last_ul_bw = 0;
+      this.last_ul_bw_level = 255;
+      this.last_ul_network_level = 255;
+
+      // Reset connection state
+      this.dc_recv_packets = 0;
+      this.dataChannelOpened = false;
+      this.connectionId = "";
+      this.index = -1;
+      this.rid = null;
+
+      // Reset global sequence number for clean message sequencing
+      GLOBAL_SEQ = 1;
     }
   }, {
     key: "getNetworkDiagnosticReport",
@@ -2668,6 +2778,25 @@ var Feature = /*#__PURE__*/function () {
         return false;
       }
     }
+  }, {
+    key: "detectBuildBitness",
+    value: function detectBuildBitness(navigator) {
+      if (Browser.isiPhoneOriPadBrowser(navigator)) {
+        console.warn("browser on iOS does not support 32/64-bit build detection.");
+        return 'unknown';
+      }
+      if (!Browser.isChrome(navigator)) {
+        console.warn("browser is not chrome, does not support 32/64-bit build detection.");
+        return 'unknown';
+      }
+      if (canSupportStringLength(536870888)) {
+        return '64';
+      }
+      if (canSupportStringLength(268435440)) {
+        return '32';
+      }
+      return 'unknown';
+    }
   }]);
 }();
 
@@ -2916,7 +3045,7 @@ var Reporter = /*#__PURE__*/function () {
     key: "reportBasicInfo",
     value: (function () {
       var _reportBasicInfo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(navigator) {
-        var userAgent, browserName, browserVersion, osName, osVersion, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, basicInfoEntries;
+        var userAgent, browserName, browserVersion, osName, osVersion, minVersion, hardwareConcurrency, gpuInfo, gpuVendor, gpuRender, isVideoFrameSupported, isOffscreenCanvasSupported, isSimdSupported, avcConfig, encoding_config, encodingResult, isEncodingSupported, extradata_info, decoding_config, decodingResult, isDecodingSupported, isSharedArrayBufferSupported, buildBitness, basicInfoEntries;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
@@ -2973,6 +3102,8 @@ var Reporter = /*#__PURE__*/function () {
               if (decodingResult) {
                 isDecodingSupported = decodingResult.supported;
               }
+              isSharedArrayBufferSupported = Feature.isSharedArrayBufferSupported();
+              buildBitness = Feature.detectBuildBitness(navigator);
               basicInfoEntries = [{
                 index: BASIC_INFO_ATTR_INDEX.BROWSER_NAME,
                 attr: "Browser Name",
@@ -3103,9 +3234,23 @@ var Reporter = /*#__PURE__*/function () {
                 affectedFeatures: [{
                   featureName: "advised to upgrade to the version above the minimum version"
                 }]
+              }, {
+                index: BASIC_INFO_ATTR_INDEX.SHARED_ARRAY_BUFFER,
+                attr: "SharedArrayBuffer",
+                val: isSharedArrayBufferSupported,
+                critical: true,
+                affectedFeatures: [{
+                  featureName: "some advanced video/audio features depend on SharedArrayBuffer"
+                }]
+              }, {
+                index: BASIC_INFO_ATTR_INDEX.BUILD_BITNESS,
+                attr: "Build Bitness",
+                val: buildBitness,
+                critical: true,
+                affectedFeatures: []
               }];
               return _context2.abrupt("return", basicInfoEntries);
-            case 29:
+            case 31:
             case "end":
               return _context2.stop();
           }
@@ -3364,6 +3509,11 @@ var _networkProberInst = /*#__PURE__*/new WeakMap();
 var _diagnosticStatsListener = /*#__PURE__*/new WeakMap();
 var _diagnosticResultListener = /*#__PURE__*/new WeakMap();
 var _reporter = /*#__PURE__*/new WeakMap();
+var _probingTimer = /*#__PURE__*/new WeakMap();
+var _isDiagnosing = /*#__PURE__*/new WeakMap();
+var _currentProberObserverProxy = /*#__PURE__*/new WeakMap();
+var _moduleLoaded = /*#__PURE__*/new WeakMap();
+var _moduleScript = /*#__PURE__*/new WeakMap();
 var _NetworkAgent_brand = /*#__PURE__*/new WeakSet();
 var NetworkAgent = /*#__PURE__*/function () {
   function NetworkAgent() {
@@ -3374,11 +3524,22 @@ var NetworkAgent = /*#__PURE__*/function () {
     _classPrivateFieldInitSpec(this, _diagnosticStatsListener, null);
     _classPrivateFieldInitSpec(this, _diagnosticResultListener, null);
     _classPrivateFieldInitSpec(this, _reporter, null);
+    _classPrivateFieldInitSpec(this, _probingTimer, null);
+    _classPrivateFieldInitSpec(this, _isDiagnosing, false);
+    _classPrivateFieldInitSpec(this, _currentProberObserverProxy, null);
+    _classPrivateFieldInitSpec(this, _moduleLoaded, false);
+    _classPrivateFieldInitSpec(this, _moduleScript, null);
     _classPrivateFieldSet2(_reporter, this, new Reporter());
   }
   return _createClass(NetworkAgent, [{
     key: "diagnose",
     value: function diagnose(jsUrl, wasmUrl, config, proberObserverProxy) {
+      if (_classPrivateFieldGet2(_isDiagnosing, this)) {
+        console.warn("A diagnostic is already running. Please stop the current diagnostic before starting a new one.");
+        return;
+      }
+      _classPrivateFieldSet2(_isDiagnosing, this, true);
+      _classPrivateFieldSet2(_currentProberObserverProxy, this, proberObserverProxy);
       var domain = JWT_DOMAINS.PROD;
       if ("domain" in config) {
         if (_assertClassBrand(_NetworkAgent_brand, this, _isValidJWTDomain).call(this, config.domain)) {
@@ -3422,8 +3583,97 @@ var NetworkAgent = /*#__PURE__*/function () {
     value: function cleanup() {
       if (_classPrivateFieldGet2(_networkProberInst, this)) {
         _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+        _classPrivateFieldSet2(_networkProberInst, this, null);
+      }
+
+      // cleanup the module state
+      _classPrivateFieldSet2(_isDiagnosing, this, false);
+      _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
+      if (_classPrivateFieldGet2(_probingTimer, this)) {
+        clearTimeout(_classPrivateFieldGet2(_probingTimer, this));
+        _classPrivateFieldSet2(_probingTimer, this, null);
+      }
+
+      // optional: if you need to completely reset, you can clean up the module state
+      _classPrivateFieldSet2(_moduleLoaded, this, false);
+      if (_classPrivateFieldGet2(_moduleScript, this)) {
+        document.body.removeChild(_classPrivateFieldGet2(_moduleScript, this));
+        _classPrivateFieldSet2(_moduleScript, this, null);
       }
     }
+  }, {
+    key: "stopDiagnose",
+    value: function () {
+      var _stopDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var diagnosticReport;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              if (!(!_classPrivateFieldGet2(_isDiagnosing, this) || !_classPrivateFieldGet2(_networkProberInst, this))) {
+                _context.next = 3;
+                break;
+              }
+              console.log("No diagnostic is currently running.");
+              return _context.abrupt("return", null);
+            case 3:
+              console.log("Stopping network diagnostic...");
+              _classPrivateFieldSet2(_isDiagnosing, this, false);
+              if (_classPrivateFieldGet2(_probingTimer, this)) {
+                clearTimeout(_classPrivateFieldGet2(_probingTimer, this));
+                _classPrivateFieldSet2(_probingTimer, this, null);
+              }
+              _context.prev = 6;
+              _context.next = 9;
+              return _classPrivateFieldGet2(_networkProberInst, this).stopUplinkProbe();
+            case 9:
+              _context.next = 11;
+              return _classPrivateFieldGet2(_networkProberInst, this).stopDownlinkProbe();
+            case 11:
+              diagnosticReport = null;
+              if (!(_classPrivateFieldGet2(_currentProberObserverProxy, this) && _classPrivateFieldGet2(_currentProberObserverProxy, this).onReportObserver)) {
+                _context.next = 19;
+                break;
+              }
+              _context.next = 15;
+              return _assertClassBrand(_NetworkAgent_brand, this, _genDiagnosticReport).call(this);
+            case 15:
+              diagnosticReport = _context.sent;
+              _classPrivateFieldGet2(_currentProberObserverProxy, this).onReportObserver(diagnosticReport);
+              _context.next = 22;
+              break;
+            case 19:
+              _context.next = 21;
+              return _assertClassBrand(_NetworkAgent_brand, this, _genDiagnosticReport).call(this);
+            case 21:
+              diagnosticReport = _context.sent;
+            case 22:
+              _classPrivateFieldGet2(_networkProberInst, this).cleanupConnections();
+              _classPrivateFieldGet2(_networkProberInst, this).killKeepAliveTimer();
+              _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+              _classPrivateFieldSet2(_networkProberInst, this, null);
+              _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
+              return _context.abrupt("return", diagnosticReport);
+            case 30:
+              _context.prev = 30;
+              _context.t0 = _context["catch"](6);
+              console.error("Error stopping diagnostic:", _context.t0);
+              if (_classPrivateFieldGet2(_networkProberInst, this)) {
+                _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+                _classPrivateFieldSet2(_networkProberInst, this, null);
+              }
+              _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
+              return _context.abrupt("return", null);
+            case 36:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this, [[6, 30]]);
+      }));
+      function stopDiagnose() {
+        return _stopDiagnose.apply(this, arguments);
+      }
+      return stopDiagnose;
+    }()
   }]);
 }();
 function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
@@ -3431,168 +3681,258 @@ function _load(jsUrl, wasmUrl, config, proberObserverProxy) {
   if (isDebugMode()) {
     console.log("[NetworkAgent#load()] jsUrl=".concat(jsUrl, " wasmUrl=").concat(wasmUrl, ", config=").concat(JSON.stringify(config)));
   }
+  if (_classPrivateFieldGet2(_moduleLoaded, this) && window.Module) {
+    console.log("Module already loaded, reusing existing instance");
+    _assertClassBrand(_NetworkAgent_brand, this, _initializeWithModule).call(this, wasmUrl, config, proberObserverProxy);
+    return;
+  }
+  if (_classPrivateFieldGet2(_moduleScript, this)) {
+    document.body.removeChild(_classPrivateFieldGet2(_moduleScript, this));
+    _classPrivateFieldSet2(_moduleScript, this, null);
+  }
+  if (window.Module) {
+    delete window.Module;
+  }
   var script = document.createElement("script");
   script.src = jsUrl;
+  _classPrivateFieldSet2(_moduleScript, this, script);
   script.onload = function () {
-    console.log(Module);
-    var probingDuration = DEF_PROBE_DURATION; // 2 mins
-    if (config != undefined && config.probeDuration != undefined) {
-      probingDuration = Math.max(DEF_PROBE_DURATION, config.probeDuration);
-    }
-    var connectTimeout = DEF_CONNECT_TIMEOUT;
-    if (config != undefined && config.connectTimeout != undefined) {
-      connectTimeout = config.connectTimeout;
-    }
-    var downlink_bandwidth = 0;
-    var downlink_rtt = 0;
-    var downlink_lossratio = 0;
-    var downlink_max_continuous_loss_num = 0;
-    var downlink_owdelay = 0;
-    var downlink_jitter = 0;
-    var downlink_bw_level = 255;
-    var downlink_network_level = 255;
-    var uplink_bandwidth = 0;
-    var uplink_rtt = 0;
-    var uplink_lossratio = 0;
-    var uplink_max_continuous_loss_num = 0;
-    var uplink_owdelay = 0;
-    var uplink_jitter = 0;
-    var uplink_bw_level = 255;
-    var uplink_network_level = 255;
-    var on_downlink_report = function on_downlink_report(params) {
-      downlink_bandwidth = params.bandwidth;
-      downlink_rtt = params.rtt;
-      downlink_lossratio = params.loss_rate;
-      downlink_max_continuous_loss_num = params.max_continuous_loss_num;
-      params.rate;
-      downlink_owdelay = params.max_owdelay;
-      downlink_jitter = params.jitter;
-      downlink_bw_level = params.bw_level;
-      downlink_network_level = params.network_level;
-      if (proberObserverProxy && proberObserverProxy.onStatsObserver) {
-        proberObserverProxy.onStatsObserver(_assertClassBrand(_NetworkAgent_brand, _this, _genNetworkStatsEntry).call(_this, "downlink", downlink_bandwidth, downlink_rtt, downlink_lossratio, downlink_jitter, downlink_max_continuous_loss_num, downlink_owdelay, downlink_bw_level, downlink_network_level));
-      }
-    };
-    var on_uplink_report = function on_uplink_report(params) {
-      uplink_bandwidth = params.bandwidth;
-      uplink_rtt = params.rtt;
-      uplink_lossratio = params.loss_rate;
-      uplink_max_continuous_loss_num = params.max_continuous_loss_num;
-      params.rate;
-      uplink_owdelay = params.max_owdelay;
-      uplink_jitter = params.jitter;
-      uplink_bw_level = params.bw_level;
-      uplink_network_level = params.network_level;
-      if (proberObserverProxy && proberObserverProxy.onStatsObserver) {
-        proberObserverProxy.onStatsObserver(_assertClassBrand(_NetworkAgent_brand, _this, _genNetworkStatsEntry).call(_this, "uplink", uplink_bandwidth, uplink_rtt, uplink_lossratio, uplink_jitter, uplink_max_continuous_loss_num, uplink_owdelay, uplink_bw_level, uplink_network_level));
-      }
-    };
-    if (!_classPrivateFieldGet2(_networkProberInst, _this)) {
-      _classPrivateFieldSet2(_networkProberInst, _this, new NetworkProberInst({
-        domain: config.domain,
-        on_uplink_report: on_uplink_report,
-        on_downlink_report: on_downlink_report,
-        Module: Module
-      }));
-    }
-    Module.onRuntimeInitialized = /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-      return _regeneratorRuntime().wrap(function _callee$(_context) {
-        while (1) switch (_context.prev = _context.next) {
-          case 0:
-            console.log("Module.onRuntimeInitialized!");
-
-            // if set wasmUrl, need to locate it.
-            if (wasmUrl != undefined && wasmUrl != "") {
-              locateFile(wasmUrl);
-            }
-          case 2:
-          case "end":
-            return _context.stop();
-        }
-      }, _callee);
-    }));
-    _assertClassBrand(_NetworkAgent_brand, _this, _startProbing).call(_this, proberObserverProxy, connectTimeout, probingDuration);
+    console.log("Script loaded, Module:", window.Module);
+    _classPrivateFieldSet2(_moduleLoaded, _this, true);
+    _assertClassBrand(_NetworkAgent_brand, _this, _initializeWithModule).call(_this, wasmUrl, config, proberObserverProxy);
+  };
+  script.onerror = function (error) {
+    console.error("Failed to load WebAssembly script:", error);
+    _classPrivateFieldSet2(_isDiagnosing, _this, false);
+    _classPrivateFieldSet2(_currentProberObserverProxy, _this, null);
   };
   document.body.appendChild(script);
+}
+function _initializeWithModule(wasmUrl, config, proberObserverProxy) {
+  var _this2 = this;
+  if (!window.Module) {
+    console.error("Module not available after script load");
+    _classPrivateFieldSet2(_isDiagnosing, this, false);
+    _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
+    return;
+  }
+  var probingDuration = DEF_PROBE_DURATION; // 2 mins
+  if (config != undefined && config.probeDuration != undefined) {
+    probingDuration = Math.max(DEF_PROBE_DURATION, config.probeDuration);
+  }
+  var connectTimeout = DEF_CONNECT_TIMEOUT;
+  if (config != undefined && config.connectTimeout != undefined) {
+    connectTimeout = config.connectTimeout;
+  }
+  var downlink_bandwidth = 0;
+  var downlink_rtt = 0;
+  var downlink_lossratio = 0;
+  var downlink_max_continuous_loss_num = 0;
+  var downlink_owdelay = 0;
+  var downlink_jitter = 0;
+  var downlink_bw_level = 255;
+  var downlink_network_level = 255;
+  var uplink_bandwidth = 0;
+  var uplink_rtt = 0;
+  var uplink_lossratio = 0;
+  var uplink_max_continuous_loss_num = 0;
+  var uplink_owdelay = 0;
+  var uplink_jitter = 0;
+  var uplink_bw_level = 255;
+  var uplink_network_level = 255;
+  var on_downlink_report = function on_downlink_report(params) {
+    downlink_bandwidth = params.bandwidth;
+    downlink_rtt = params.rtt;
+    downlink_lossratio = params.loss_rate;
+    downlink_max_continuous_loss_num = params.max_continuous_loss_num;
+    params.rate;
+    downlink_owdelay = params.max_owdelay;
+    downlink_jitter = params.jitter;
+    downlink_bw_level = params.bw_level;
+    downlink_network_level = params.network_level;
+    if (proberObserverProxy && proberObserverProxy.onStatsObserver) {
+      proberObserverProxy.onStatsObserver(_assertClassBrand(_NetworkAgent_brand, _this2, _genNetworkStatsEntry).call(_this2, "downlink", downlink_bandwidth, downlink_rtt, downlink_lossratio, downlink_jitter, downlink_max_continuous_loss_num, downlink_owdelay, downlink_bw_level, downlink_network_level));
+    }
+  };
+  var on_uplink_report = function on_uplink_report(params) {
+    uplink_bandwidth = params.bandwidth;
+    uplink_rtt = params.rtt;
+    uplink_lossratio = params.loss_rate;
+    uplink_max_continuous_loss_num = params.max_continuous_loss_num;
+    params.rate;
+    uplink_owdelay = params.max_owdelay;
+    uplink_jitter = params.jitter;
+    uplink_bw_level = params.bw_level;
+    uplink_network_level = params.network_level;
+    if (proberObserverProxy && proberObserverProxy.onStatsObserver) {
+      proberObserverProxy.onStatsObserver(_assertClassBrand(_NetworkAgent_brand, _this2, _genNetworkStatsEntry).call(_this2, "uplink", uplink_bandwidth, uplink_rtt, uplink_lossratio, uplink_jitter, uplink_max_continuous_loss_num, uplink_owdelay, uplink_bw_level, uplink_network_level));
+    }
+  };
+  if (_classPrivateFieldGet2(_networkProberInst, this)) {
+    _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+  }
+  _classPrivateFieldSet2(_networkProberInst, this, new NetworkProberInst({
+    domain: config.domain,
+    on_uplink_report: on_uplink_report,
+    on_downlink_report: on_downlink_report,
+    Module: window.Module
+  }));
+
+  // handle Module initialization
+  console.log("Module state check:", {
+    onRuntimeInitialized: !!window.Module.onRuntimeInitialized,
+    cwrap: _typeof(window.Module.cwrap),
+    asm: !!window.Module.asm,
+    calledRun: !!window.Module.calledRun
+  });
+
+  // check if Module is already fully initialized
+  var isModuleReady = typeof window.Module.cwrap === "function" && (window.Module.onRuntimeInitialized === true || window.Module.calledRun === true);
+  if (isModuleReady) {
+    console.log("Module is ready, starting probing immediately");
+    _assertClassBrand(_NetworkAgent_brand, this, _handleModuleReady).call(this, wasmUrl, proberObserverProxy, connectTimeout, probingDuration);
+  } else {
+    console.log("Waiting for Module initialization");
+
+    // set timeout to avoid onRuntimeInitialized not being called
+    var initTimeout = setTimeout(function () {
+      console.warn("Module initialization timeout, attempting to start anyway");
+      if (typeof window.Module.cwrap === "function") {
+        _assertClassBrand(_NetworkAgent_brand, _this2, _handleModuleReady).call(_this2, wasmUrl, proberObserverProxy, connectTimeout, probingDuration);
+      } else {
+        console.error("Module is not properly initialized after timeout");
+        _classPrivateFieldSet2(_isDiagnosing, _this2, false);
+        _classPrivateFieldSet2(_currentProberObserverProxy, _this2, null);
+      }
+    }, 5000);
+    window.Module.onRuntimeInitialized = function () {
+      console.log("Module.onRuntimeInitialized callback triggered!");
+      clearTimeout(initTimeout);
+      _assertClassBrand(_NetworkAgent_brand, _this2, _handleModuleReady).call(_this2, wasmUrl, proberObserverProxy, connectTimeout, probingDuration);
+    };
+  }
+}
+function _handleModuleReady(wasmUrl, proberObserverProxy, connectTimeout, probingDuration) {
+  var _this3 = this;
+  // Configure WebAssembly module location if needed
+  if (wasmUrl != undefined && wasmUrl != "") {
+    if (typeof window.locateFile === "function") {
+      window.locateFile(wasmUrl);
+    } else if (window.Module && typeof window.Module.locateFile === "function") {
+      window.Module.locateFile(wasmUrl);
+    } else {
+      console.warn("locateFile function not available, wasm URL:", wasmUrl);
+    }
+  }
+
+  // Add a small delay to ensure Module is fully ready
+  setTimeout(function () {
+    _assertClassBrand(_NetworkAgent_brand, _this3, _startProbing).call(_this3, proberObserverProxy, connectTimeout, probingDuration);
+  }, 100);
 }
 function _startProbing(_x, _x2, _x3) {
   return _startProbing2.apply(this, arguments);
 }
 function _startProbing2() {
   _startProbing2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(proberObserverProxy, connectTimeout, probingDuration) {
-    var _this2 = this;
+    var _this4 = this;
     var isConnected, diagnosticReport;
     return _regeneratorRuntime().wrap(function _callee3$(_context3) {
       while (1) switch (_context3.prev = _context3.next) {
         case 0:
-          if (Module.onRuntimeInitialized) {
-            _context3.next = 3;
+          if (!(!window.Module || typeof window.Module.cwrap !== "function")) {
+            _context3.next = 5;
             break;
           }
-          console.error("Module is not initialized yet.");
+          console.error("Module is not properly initialized.");
+          _classPrivateFieldSet2(_isDiagnosing, this, false);
+          _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
           return _context3.abrupt("return");
-        case 3:
+        case 5:
           console.log("Starting network probing...");
-          _context3.next = 6;
+          _context3.next = 8;
           return _classPrivateFieldGet2(_networkProberInst, this).connect(connectTimeout);
-        case 6:
+        case 8:
           isConnected = _context3.sent;
           if (!isConnected) {
-            _context3.next = 15;
+            _context3.next = 20;
             break;
           }
-          _context3.next = 10;
+          if (_classPrivateFieldGet2(_isDiagnosing, this)) {
+            _context3.next = 13;
+            break;
+          }
+          console.log("Diagnostic was stopped during connection.");
+          return _context3.abrupt("return");
+        case 13:
+          _context3.next = 15;
           return _classPrivateFieldGet2(_networkProberInst, this).startUplinkProbe();
-        case 10:
-          _context3.next = 12;
+        case 15:
+          _context3.next = 17;
           return _classPrivateFieldGet2(_networkProberInst, this).startDownlinkProbe();
-        case 12:
-          setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        case 17:
+          _classPrivateFieldSet2(_probingTimer, this, setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
             var diagnosticReport;
             return _regeneratorRuntime().wrap(function _callee2$(_context2) {
               while (1) switch (_context2.prev = _context2.next) {
                 case 0:
-                  console.log("Stopping probing...");
-                  _context2.next = 3;
-                  return _classPrivateFieldGet2(_networkProberInst, _this2).stopUplinkProbe();
-                case 3:
-                  _context2.next = 5;
-                  return _classPrivateFieldGet2(_networkProberInst, _this2).stopDownlinkProbe();
-                case 5:
-                  if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
-                    _context2.next = 10;
+                  if (_classPrivateFieldGet2(_isDiagnosing, _this4)) {
+                    _context2.next = 2;
                     break;
                   }
-                  _context2.next = 8;
-                  return _assertClassBrand(_NetworkAgent_brand, _this2, _genDiagnosticReport).call(_this2);
-                case 8:
+                  return _context2.abrupt("return");
+                case 2:
+                  console.log("Stopping probing (timeout)...");
+                  _classPrivateFieldSet2(_isDiagnosing, _this4, false);
+                  _classPrivateFieldSet2(_probingTimer, _this4, null);
+                  _context2.next = 7;
+                  return _classPrivateFieldGet2(_networkProberInst, _this4).stopUplinkProbe();
+                case 7:
+                  _context2.next = 9;
+                  return _classPrivateFieldGet2(_networkProberInst, _this4).stopDownlinkProbe();
+                case 9:
+                  if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
+                    _context2.next = 14;
+                    break;
+                  }
+                  _context2.next = 12;
+                  return _assertClassBrand(_NetworkAgent_brand, _this4, _genDiagnosticReport).call(_this4);
+                case 12:
                   diagnosticReport = _context2.sent;
                   proberObserverProxy.onReportObserver(diagnosticReport);
-                case 10:
-                  _classPrivateFieldGet2(_networkProberInst, _this2).cleanupConnections();
-                  _classPrivateFieldGet2(_networkProberInst, _this2).killKeepAliveTimer();
-                case 12:
+                case 14:
+                  _classPrivateFieldGet2(_networkProberInst, _this4).cleanupConnections();
+                  _classPrivateFieldGet2(_networkProberInst, _this4).killKeepAliveTimer();
+                  _classPrivateFieldGet2(_networkProberInst, _this4).cleanup();
+                  _classPrivateFieldSet2(_networkProberInst, _this4, null);
+                  _classPrivateFieldSet2(_currentProberObserverProxy, _this4, null);
+                case 19:
                 case "end":
                   return _context2.stop();
               }
             }, _callee2);
-          })), probingDuration);
-          _context3.next = 22;
+          })), probingDuration));
+          _context3.next = 32;
           break;
-        case 15:
+        case 20:
+          console.log("Failed to connect, stopping diagnostic...");
+          _classPrivateFieldSet2(_isDiagnosing, this, false);
           if (!(proberObserverProxy && proberObserverProxy.onReportObserver)) {
-            _context3.next = 20;
+            _context3.next = 27;
             break;
           }
-          _context3.next = 18;
+          _context3.next = 25;
           return _assertClassBrand(_NetworkAgent_brand, this, _genDiagnosticReport).call(this);
-        case 18:
+        case 25:
           diagnosticReport = _context3.sent;
           proberObserverProxy.onReportObserver(diagnosticReport);
-        case 20:
+        case 27:
           _classPrivateFieldGet2(_networkProberInst, this).cleanupConnections();
           _classPrivateFieldGet2(_networkProberInst, this).killKeepAliveTimer();
-        case 22:
+          _classPrivateFieldGet2(_networkProberInst, this).cleanup();
+          _classPrivateFieldSet2(_networkProberInst, this, null);
+          _classPrivateFieldSet2(_currentProberObserverProxy, this, null);
+        case 32:
         case "end":
           return _context3.stop();
       }
@@ -4505,8 +4845,8 @@ var Prober = /*#__PURE__*/function () {
               _context3.prev = 42;
               _context3.t0 = _context3["catch"](12);
               return _context3.abrupt("return", {
-                code: ERR_CODE.UNKNOWN_ERROR,
-                message: "Failed to start video diagnostic. Error: ".concat(error.message)
+                code: _context3.t0.code,
+                message: "Failed to start video diagnostic. Error: ".concat(_context3.t0.message)
               });
             case 45:
             case "end":
@@ -4724,6 +5064,51 @@ var Prober = /*#__PURE__*/function () {
     }
 
     /**
+     * Stop the ongoing network diagnostic that was initiated by the {@link startToDiagnose} method.
+     *
+     * This function will immediately stop all network probing activities, cleanup all resources including
+     * network connections, timers, and WebAssembly instances. If a diagnostic is currently running,
+     * it will generate a final report with the data collected up to the point of stopping.
+     *
+     * @async
+     * @function stopToDiagnose
+     * @returns {Promise<DiagnosticReport|null>} A promise that resolves to a diagnostic report with the data collected before stopping, or null if no diagnostic was running.
+     *
+     * @example
+     * // Start diagnostic
+     * const diagnosticPromise = prober.startToDiagnose(jsUrl, wasmUrl, config, (stats) => {
+     *   console.log(stats);
+     * });
+     *
+     * // Stop diagnostic after 30 seconds
+     * setTimeout(async () => {
+     *   const partialReport = await prober.stopToDiagnose();
+     *   console.log('Diagnostic stopped, partial report:', partialReport);
+     * }, 30000);
+     */
+  }, {
+    key: "stopToDiagnose",
+    value: (function () {
+      var _stopToDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              _context4.next = 2;
+              return _classPrivateFieldGet2(_networkAgent, this).stopDiagnose();
+            case 2:
+              return _context4.abrupt("return", _context4.sent);
+            case 3:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this);
+      }));
+      function stopToDiagnose() {
+        return _stopToDiagnose.apply(this, arguments);
+      }
+      return stopToDiagnose;
+    }()
+    /**
      * Query the trackingId(rid) of last round of probing.
      *
      * @function queryRid
@@ -4733,6 +5118,7 @@ var Prober = /*#__PURE__*/function () {
      * const rid = prober.queryRid();
      * console.log(rid);
      */
+    )
   }, {
     key: "queryRid",
     value: function queryRid() {
@@ -4741,7 +5127,7 @@ var Prober = /*#__PURE__*/function () {
 
     /**
      * Cleanup the resources created in ProbeSDK, like network connections, rendering resources, etc.
-     * 
+     *
      * @function cleanup
      * @example
      * prober.cleanup();
@@ -4767,60 +5153,60 @@ function _isRendererTypeSupported(_x4) {
   return _isRendererTypeSupported2.apply(this, arguments);
 }
 function _isRendererTypeSupported2() {
-  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(rendererType) {
-    return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-      while (1) switch (_context5.prev = _context5.next) {
+  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
+    return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+      while (1) switch (_context6.prev = _context6.next) {
         case 0:
-          return _context5.abrupt("return", new Promise( /*#__PURE__*/function () {
-            var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(resolve) {
+          return _context6.abrupt("return", new Promise( /*#__PURE__*/function () {
+            var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
               var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
-              return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-                while (1) switch (_context4.prev = _context4.next) {
+              return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+                while (1) switch (_context5.prev = _context5.next) {
                   case 0:
                     if (!(rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                      _context4.next = 4;
+                      _context5.next = 4;
                       break;
                     }
                     resolve(true);
-                    _context4.next = 22;
+                    _context5.next = 22;
                     break;
                   case 4:
                     if (!(rendererType === RENDERER_TYPE.WEBGL)) {
-                      _context4.next = 9;
+                      _context5.next = 9;
                       break;
                     }
                     isWebGLSupported = Feature.isWebGLSupported();
                     resolve(isWebGLSupported);
-                    _context4.next = 22;
+                    _context5.next = 22;
                     break;
                   case 9:
                     if (!(rendererType === RENDERER_TYPE.WEBGL_2)) {
-                      _context4.next = 14;
+                      _context5.next = 14;
                       break;
                     }
                     isWebGL2Supported = Feature.isWebGL2Supported();
                     resolve(isWebGL2Supported);
-                    _context4.next = 22;
+                    _context5.next = 22;
                     break;
                   case 14:
                     if (!(rendererType === RENDERER_TYPE.WEBGPU)) {
-                      _context4.next = 21;
+                      _context5.next = 21;
                       break;
                     }
-                    _context4.next = 17;
+                    _context5.next = 17;
                     return Feature.isWebGPUSupported();
                   case 17:
-                    isWebGPUSupported = _context4.sent;
+                    isWebGPUSupported = _context5.sent;
                     resolve(isWebGPUSupported);
-                    _context4.next = 22;
+                    _context5.next = 22;
                     break;
                   case 21:
                     resolve(false);
                   case 22:
                   case "end":
-                    return _context4.stop();
+                    return _context5.stop();
                 }
-              }, _callee4);
+              }, _callee5);
             }));
             return function (_x5) {
               return _ref.apply(this, arguments);
@@ -4828,9 +5214,9 @@ function _isRendererTypeSupported2() {
           }()));
         case 1:
         case "end":
-          return _context5.stop();
+          return _context6.stop();
       }
-    }, _callee5);
+    }, _callee6);
   }));
   return _isRendererTypeSupported2.apply(this, arguments);
 }
