@@ -505,7 +505,13 @@
   var ERR_CODE = {
     OK: 0,
     INVALID_ARGS: -1,
-    API_NOT_SUPPORTED: -2
+    API_NOT_SUPPORTED: -2,
+    MIME_TYPE_NOT_SUPPORTED: -3,
+    FAILED_TO_GET_USER_MEDIA: -4,
+    FAILED_TO_CREATE_AUDIO_CONTEXT: -5,
+    FAILED_TO_CREATE_MEDIA_RECORDER: -6,
+    FAILED_TO_RECORD: -7,
+    FAILED_TO_PLAY: -8
   };
 
   /**
@@ -724,19 +730,6 @@
   }
   function readValueFromLocalStorage(key) {
     return localStorage.getItem(key);
-  }
-
-  /**
-   * Test whether can allocate a string of a given length.
-   * @param {Number} len a length of string to be allocated. 
-   * @returns {boolean} true if the string can be allocated, false otherwise.
-   */
-  function canSupportStringLength(len) {
-    try {
-      return new Array(len + 1).join('x').length === len;
-    } catch (e) {
-      return false;
-    }
   }
 
   var GLOBAL_SEQ = 1;
@@ -3697,8 +3690,9 @@
           }
           var renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
           var vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-          console.log("Renderer: ".concat(renderer));
-          console.log("Vendor: ".concat(vendor));
+          if (isDebugMode()) {
+            console.log("isHardwareAccelerationEnabled: renderer:".concat(renderer, " vendor:").concat(vendor));
+          }
           var isSoftwareRenderer = /software/i.test(renderer);
           return !isSoftwareRenderer;
         } catch (e) {
@@ -3721,7 +3715,9 @@
           }
           var renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
           var vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-          console.log("Vendor: ".concat(vendor));
+          if (isDebugMode()) {
+            console.log("isGraphicsAccelerationEnabled: renderer:".concat(renderer, " vendor:").concat(vendor));
+          }
           var isSwiftShader = /swiftshader/i.test(renderer);
           return !isSwiftShader;
         } catch (e) {
@@ -4054,7 +4050,7 @@
                   isDecodingSupported = decodingResult.supported;
                 }
                 isSharedArrayBufferSupported = Feature.isSharedArrayBufferSupported();
-                buildBitness = Feature.detectBuildBitness(navigator);
+                buildBitness = 'unknown';
                 basicInfoEntries = [{
                   index: BASIC_INFO_ATTR_INDEX.BROWSER_NAME,
                   attr: "Browser Name",
@@ -4496,7 +4492,9 @@
           if (_assertClassBrand(_NetworkAgent_brand, this, _isValidJWTDomain).call(this, config.domain)) {
             domain = config.domain;
           } else {
-            console.log("custom jwt domain: ".concat(config.domain));
+            if (isDebugMode()) {
+              console.log("custom jwt domain: ".concat(config.domain));
+            }
             domain = config.domain;
           }
         } else {
@@ -4648,7 +4646,6 @@
     script.src = jsUrl;
     _classPrivateFieldSet2(_moduleScript, this, script);
     script.onload = function () {
-      console.log("Script loaded, Module:", window.Module);
       _classPrivateFieldSet2(_moduleLoaded, _this, true);
       _assertClassBrand(_NetworkAgent_brand, _this, _initializeWithModule).call(_this, wasmUrl, config, proberObserverProxy);
     };
@@ -4730,12 +4727,14 @@
     }));
 
     // handle Module initialization
-    console.log("Module state check:", {
-      onRuntimeInitialized: !!window.Module.onRuntimeInitialized,
-      cwrap: _typeof(window.Module.cwrap),
-      asm: !!window.Module.asm,
-      calledRun: !!window.Module.calledRun
-    });
+    if (isDebugMode()) {
+      console.log("Module state check:", {
+        onRuntimeInitialized: !!window.Module.onRuntimeInitialized,
+        cwrap: _typeof(window.Module.cwrap),
+        asm: !!window.Module.asm,
+        calledRun: !!window.Module.calledRun
+      });
+    }
 
     // check if Module is already fully initialized
     var isModuleReady = typeof window.Module.cwrap === "function" && (window.Module.onRuntimeInitialized === true || window.Module.calledRun === true);
@@ -5462,7 +5461,10 @@
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
               case 0:
-                mdResult = {};
+                mdResult = {
+                  code: ERR_CODE.OK,
+                  message: ""
+                };
                 if ((_navigator$mediaDevic = navigator.mediaDevices) !== null && _navigator$mediaDevic !== void 0 && _navigator$mediaDevic.enumerateDevices) {
                   _context2.next = 5;
                   break;
@@ -5500,121 +5502,287 @@
         return requestMediaDevices;
       }()
       /**
-       * An object represents the result of diagnostics.
+       * Diagnostic result object.
        *
        * @typedef {object} DiagnosticResult
-       * @property {number} code an error code defined by {@link ERR_CODE}.
-       * @property {string} message an error message.
-       * @property {MediaStream} stream a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.
+       * @property {number} code
+       *   - Status code from {@link ERR_CODE}. 0 indicates success; non-zero indicates an error.
+       * @property {string} message
+       *   - A brief description or error message for this diagnostic result.
+       * @property {MediaStream} [stream]
+       *   - Optional. A MediaStream containing specified tracks (e.g. used when diagnosing video devices). Not always present for audio diagnostics.
        */
       /**
-       * Performs audio diagnostic by recording audio from an input device and playing it through an output device.
-       * Diagnose any audio input/output devices by passing the constraints of the selected devices.
-       * Adjust how long you record the audio by setting the {@link duration} parameter. Specify the mime type of how
-       * to record the audio by setting the {@link mimeType} parameter.
+       * Performs an asynchronous audio diagnostic by recording audio from a specified input device
+       * and playing it back through a specified output device. Supports custom recording duration,
+       * MIME type selection, and captures all errors, returning them as a {@link DiagnosticResult}.
        *
+       * @async
        * @function diagnoseAudio
-       * @param {MediaStreamConstraints} inputConstraints The constraints for capturing audio from input devices.
-       * @param {MediaStreamConstraints} outputConstraints The constraints for playing audio through output devices.
-       * @param {number} [duration=0] The duration of the recording in milliseconds. If 0, 5000 milliseconds is used as default value.
-       * @param {string|undefined} [mimeType=''] The MIME type of the recorded audio. Default is an empty string. If pass an empty string or undefined,
-       * the mime type 'audio/webm;codecs=opus' will be used as the default value.
-       * @returns {DiagnosticResult} An object indicating the result of the audio diagnostic.
-       * @throws {Error} If any parameters are invalid, a customized Error will be thrown.
-       * The standard exceptions, like {@link https://developer.mozilla.org/en-US/docs/Web/API/DOMException|DOMException}, will be thrown if are captured while recording and playing.
+       * @param {MediaStreamConstraints} inputConstraints
+       *   - Constraints for capturing audio input, e.g. `{ audio: { deviceId: 'xxx' }, video: false }`.
+       * @param {Object} outputConstraints
+       * @param {Object} outputConstraints.audio
+       * @param {string} outputConstraints.audio.deviceId
+       *   - The deviceId of the audio output device; required.
+       * @param {number} [duration=0]
+       *   - Recording duration in milliseconds. If 0 or unspecified, defaults to 5000 ms. Maximum allowed is 60000 ms.
+       * @param {string} [mimeType='']
+       *   - MIME type for recording. If empty or undefined, attempts `"audio/webm;codecs=opus"`, then `"audio/mp4"`, then `"audio/mp3"`.
+       *
+       * @returns {Promise<DiagnosticResult>}
+       *   - Resolves to a {@link DiagnosticResult} object:
+       *     - On success: `{ code: ERR_CODE.OK, message: "audio diagnostic complete!" }`
+       *     - On failure: contains the appropriate error code and message (e.g. permission denied, initialization failure, AudioContext/MediaRecorder creation failure, etc.).
        *
        * @example
-       * const audioInputConstraint = {
-       *  audio: { deviceId: 'default' },
-       *  video: false,
-       * };
-       *
-       * const audioOutputConstraint = {
-       *  audio: { deviceId: 'xxxxxxxxxxxxxxxx' },
-       *  video: false,
-       * };
-       *
-       * try {
-       *  const diagnoseResult = prober.diagnoseAudio(audioInputConstraint, audioOutputConstraint, 0, '');
-       *  console.log(diagnoseResult);
-       * } catch (e) {
-       *  console.error(e);
-       * }
+       * (async () => {
+       *   const input = { audio: { deviceId: 'default' }, video: false };
+       *   const output = { audio: { deviceId: 'xxxxxx' }, video: false };
+       *   const result = await diagnoseAudio(input, output, 10000, '');
+       *   if (result.code === ERR_CODE.OK) {
+       *     console.log('Diagnostic completed successfully');
+       *   } else {
+       *     console.error('Diagnostic failed:', result.message);
+       *   }
+       * })();
        */
       )
     }, {
       key: "diagnoseAudio",
-      value: function diagnoseAudio(inputConstraints, outputConstraints) {
-        var _this = this;
-        var duration = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-        var mimeType = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "";
-        if (inputConstraints == undefined || outputConstraints == undefined || duration < 0) {
-          throw new Error("Invalid arguments. inputConstraint:".concat(inputConstraints, ", outputConstraint:").concat(outputConstraints, ", duration:").concat(duration));
-        }
-        var _mimeType = mimeType;
-        if (_mimeType == "" || _mimeType == undefined) {
-          _mimeType = "audio/webm;codecs=opus";
-          var isMimeTypeSupported = Hardware.isMimeTypeSupported(_mimeType);
-          if (!isMimeTypeSupported) {
-            console.log("diagnoseAudio() mimeType(".concat(_mimeType, ") is not supported."));
-            _mimeType = "audio/mp4";
-            isMimeTypeSupported = Hardware.isMimeTypeSupported(_mimeType);
-            if (!isMimeTypeSupported) {
-              console.log("diagnoseAudio() mimeType(".concat(_mimeType, ") is not supported."));
-              _mimeType = "audio/mp3";
-              isMimeTypeSupported = Hardware.isMimeTypeSupported(_mimeType);
-              if (!isMimeTypeSupported) {
-                console.log("diagnoseAudio() mimeType(".concat(_mimeType, ") is not supported."));
-                throw new Error("diagnoseAudio() no supported mimeType available!");
-              }
-            }
-          }
-        }
-        navigator.mediaDevices.getUserMedia(inputConstraints).then(function (stream) {
-          var mediaRecorder = new MediaRecorder(stream, {
-            mimeType: _mimeType
-          });
-          var audioOutputDeviceId = outputConstraints.audio.deviceId;
-          var audioContext = new AudioContext({
-            sinkId: audioOutputDeviceId
-          });
-          var recordedBlobs = [];
-          mediaRecorder.ondataavailable = function (e) {
-            if (e.data.size > 0) {
-              recordedBlobs.push(e.data);
-            }
-          };
-          mediaRecorder.start();
-          setTimeout(function () {
-            mediaRecorder.stop();
-          }, duration);
-          mediaRecorder.addEventListener("stop", function () {
-            var blob = new Blob(recordedBlobs, {
-              type: _mimeType
-            });
-            if (Browser.isSafari(navigator).matched) {
-              _assertClassBrand(_Prober_brand, _this, _playAudioWithAudioContext).call(_this, audioContext, blob).then(function () {
-                console.log("audio recording is playing on Safari.");
-              }).catch(function (e) {
-                console.error("error in playing on Safari. error: ".concat(e));
-              });
-            } else {
-              var url = URL.createObjectURL(blob);
-              var audio = new Audio(url);
-              var source = audioContext.createMediaElementSource(audio);
-              source.connect(audioContext.destination);
-              audio.play();
-            }
-          });
-        }).catch(function (e) {
-          throw e; // external caller handles the errors
-        });
-        return {
-          code: ERR_CODE.OK,
-          message: "audio diagnostic is started!"
-        };
-      }
+      value: (function () {
+        var _diagnoseAudio = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(inputConstraints, outputConstraints) {
+          var _outputConstraints$au;
+          var duration,
+            mimeType,
+            _duration,
+            candidates,
+            _mimeType,
+            stream,
+            audioContext,
+            mediaRecorder,
+            recordedBlobs,
+            stopTimer,
+            _args5 = arguments;
+          return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+            while (1) switch (_context5.prev = _context5.next) {
+              case 0:
+                duration = _args5.length > 2 && _args5[2] !== undefined ? _args5[2] : 0;
+                mimeType = _args5.length > 3 && _args5[3] !== undefined ? _args5[3] : "";
+                if (!(inputConstraints == undefined || outputConstraints == undefined || !((_outputConstraints$au = outputConstraints.audio) !== null && _outputConstraints$au !== void 0 && _outputConstraints$au.deviceId) || duration < 0)) {
+                  _context5.next = 4;
+                  break;
+                }
+                throw new Error("Invalid arguments. inputConstraints:".concat(inputConstraints, ", outputConstraints:").concat(outputConstraints, ", duration:").concat(duration));
+              case 4:
+                // set duration (default 5s, max 60s)
+                _duration = Math.min(duration || 5000, 60000); // find supported mime type
+                candidates = [mimeType || "audio/webm;codecs=opus", "audio/mp4", "audio/mp3"];
+                _mimeType = candidates.find(function (t) {
+                  return Hardware.isMimeTypeSupported(t);
+                });
+                if (_mimeType) {
+                  _context5.next = 9;
+                  break;
+                }
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.MIME_TYPE_NOT_SUPPORTED,
+                  message: "No supported mimeType available"
+                });
+              case 9:
+                _context5.prev = 9;
+                _context5.next = 12;
+                return navigator.mediaDevices.getUserMedia(inputConstraints);
+              case 12:
+                stream = _context5.sent;
+                _context5.next = 18;
+                break;
+              case 15:
+                _context5.prev = 15;
+                _context5.t0 = _context5["catch"](9);
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.FAILED_TO_GET_USER_MEDIA,
+                  message: "diagnoseAudio() getUserMedia failed: ".concat(_context5.t0.message)
+                });
+              case 18:
+                _context5.prev = 18;
+                audioContext = new AudioContext();
+                _context5.next = 26;
+                break;
+              case 22:
+                _context5.prev = 22;
+                _context5.t1 = _context5["catch"](18);
+                stream.getTracks().forEach(function (t) {
+                  return t.stop();
+                });
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.FAILED_TO_CREATE_AUDIO_CONTEXT,
+                  message: "diagnoseAudio() failed to create AudioContext: ".concat(_context5.t1.message)
+                });
+              case 26:
+                _context5.prev = 26;
+                mediaRecorder = new MediaRecorder(stream, {
+                  mimeType: _mimeType
+                });
+                _context5.next = 36;
+                break;
+              case 30:
+                _context5.prev = 30;
+                _context5.t2 = _context5["catch"](26);
+                stream.getTracks().forEach(function (t) {
+                  return t.stop();
+                });
+                _context5.next = 35;
+                return audioContext.close();
+              case 35:
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.FAILED_TO_CREATE_MEDIA_RECORDER,
+                  message: "diagnoseAudio() failed to create MediaRecorder: ".concat(_context5.t2.message)
+                });
+              case 36:
+                // prepare for recording and playing
+                recordedBlobs = [];
+                mediaRecorder.ondataavailable = function (e) {
+                  if (e.data && e.data.size > 0) recordedBlobs.push(e.data);
+                };
+                mediaRecorder.onerror = function (e) {
+                  console.error("mediaRecorder error:", e);
+                };
 
+                // start recording
+                mediaRecorder.start();
+                stopTimer = setTimeout(function () {
+                  return mediaRecorder.stop();
+                }, _duration);
+                _context5.prev = 41;
+                _context5.next = 44;
+                return new Promise(function (resolve) {
+                  mediaRecorder.addEventListener("stop", /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+                    var blob, url, audio, outId, src, cleanUp;
+                    return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+                      while (1) switch (_context4.prev = _context4.next) {
+                        case 0:
+                          clearTimeout(stopTimer);
+                          // stop microphone
+                          stream.getTracks().forEach(function (t) {
+                            return t.stop();
+                          });
+
+                          // generate Blob and URL
+                          blob = new Blob(recordedBlobs, {
+                            type: _mimeType
+                          });
+                          url = URL.createObjectURL(blob);
+                          audio = new Audio(url); // try to switch to the target output device
+                          outId = outputConstraints.audio.deviceId;
+                          if (!(typeof audio.setSinkId === "function")) {
+                            _context4.next = 15;
+                            break;
+                          }
+                          _context4.prev = 7;
+                          _context4.next = 10;
+                          return audio.setSinkId(outId);
+                        case 10:
+                          _context4.next = 15;
+                          break;
+                        case 12:
+                          _context4.prev = 12;
+                          _context4.t0 = _context4["catch"](7);
+                          console.warn("setSinkId failed:", _context4.t0);
+                        case 15:
+                          if (!(audioContext.state === "suspended")) {
+                            _context4.next = 23;
+                            break;
+                          }
+                          _context4.prev = 16;
+                          _context4.next = 19;
+                          return audioContext.resume();
+                        case 19:
+                          _context4.next = 23;
+                          break;
+                        case 21:
+                          _context4.prev = 21;
+                          _context4.t1 = _context4["catch"](16);
+                        case 23:
+                          // if Safari or setSinkId is not supported, use AudioContext to connect
+                          if (typeof audio.setSinkId !== "function") {
+                            src = audioContext.createMediaElementSource(audio);
+                            src.connect(audioContext.destination);
+                          }
+
+                          // play
+                          _context4.prev = 24;
+                          _context4.next = 27;
+                          return audio.play();
+                        case 27:
+                          _context4.next = 32;
+                          break;
+                        case 29:
+                          _context4.prev = 29;
+                          _context4.t2 = _context4["catch"](24);
+                          console.warn("audio.play() failed:", _context4.t2);
+                        case 32:
+                          // clean up after playing ends or timeout
+                          cleanUp = /*#__PURE__*/function () {
+                            var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+                              return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+                                while (1) switch (_context3.prev = _context3.next) {
+                                  case 0:
+                                    URL.revokeObjectURL(url);
+                                    if (!(audioContext.state !== "closed")) {
+                                      _context3.next = 4;
+                                      break;
+                                    }
+                                    _context3.next = 4;
+                                    return audioContext.close();
+                                  case 4:
+                                    resolve();
+                                  case 5:
+                                  case "end":
+                                    return _context3.stop();
+                                }
+                              }, _callee3);
+                            }));
+                            return function cleanUp() {
+                              return _ref2.apply(this, arguments);
+                            };
+                          }();
+                          audio.onended = cleanUp;
+                          // prevent short audio or onended not triggered
+                          setTimeout(cleanUp, Math.min(_duration + 1000, 65000));
+                        case 35:
+                        case "end":
+                          return _context4.stop();
+                      }
+                    }, _callee4, null, [[7, 12], [16, 21], [24, 29]]);
+                  })));
+                });
+              case 44:
+                _context5.next = 49;
+                break;
+              case 46:
+                _context5.prev = 46;
+                _context5.t3 = _context5["catch"](41);
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.FAILED_TO_RECORD,
+                  message: "diagnoseAudio() recording/playing failed: ".concat(_context5.t3.message)
+                });
+              case 49:
+                return _context5.abrupt("return", {
+                  code: ERR_CODE.OK,
+                  message: "audio diagnostic complete!"
+                });
+              case 50:
+              case "end":
+                return _context5.stop();
+            }
+          }, _callee5, null, [[9, 15], [18, 22], [26, 30], [41, 46]]);
+        }));
+        function diagnoseAudio(_x2, _x3) {
+          return _diagnoseAudio.apply(this, arguments);
+        }
+        return diagnoseAudio;
+      }()
       /**
        * An object represents the configuration of network diagnostic.
        *
@@ -5623,7 +5791,6 @@
        * @property {number} probeDuration the duration of how long a round of a network diagnostic. If not set, the default value is {@link DEF_PROBE_DURATION}. If set, the maximum value between {@link DEF_PROBE_DURATION} and {@link probeDuration} is used as the final probing duration.
        * @property {string} domain the domain of the prober server. Provide your own domain or use the default domain provided by Zoom if not set.
        */
-
       /**
        * An object describes how to render video streams.
        *
@@ -5631,7 +5798,6 @@
        * @property {number} rendererType the renderer type, refer to the values of {@link RENDERER_TYPE}.
        * @property {HTMLMediaElement|HTMLCanvasElement|OffscreenCanvas} target where to render a video stream.
        */
-
       /**
        * Diagnose video device like camera and show the result on a renderable object.
        * You can select a camera by setting {@link constraints} and different renderer type by setting the parameter {@link options}.
@@ -5694,29 +5860,30 @@
        * const result = await prober.diagnoseVideo(constraints, options);
        * console.log(result);
        */
+      )
     }, {
       key: "diagnoseVideo",
       value: (function () {
-        var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(constraints, options) {
+        var _diagnoseVideo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(constraints, options) {
           var isRendererTypeSupported, allowedTargetTypes, isTargetTypeValid, diagnosticResult, stream, video, videoTrack, settings, videoAspectRatio, canvasAspect, drawWidth, drawHeight, offsetX, offsetY, viewport, rendersProxy;
-          return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-            while (1) switch (_context3.prev = _context3.next) {
+          return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+            while (1) switch (_context6.prev = _context6.next) {
               case 0:
                 if (!(!constraints || !options)) {
-                  _context3.next = 2;
+                  _context6.next = 2;
                   break;
                 }
                 throw new Error("Invalid arguments. constraints:".concat(constraints, ", options:").concat(options));
               case 2:
-                _context3.next = 4;
+                _context6.next = 4;
                 return _assertClassBrand(_Prober_brand, this, _isRendererTypeSupported).call(this, options.rendererType);
               case 4:
-                isRendererTypeSupported = _context3.sent;
+                isRendererTypeSupported = _context6.sent;
                 if (isRendererTypeSupported) {
-                  _context3.next = 7;
+                  _context6.next = 7;
                   break;
                 }
-                return _context3.abrupt("return", {
+                return _context6.abrupt("return", {
                   code: ERR_CODE.API_NOT_SUPPORTED,
                   message: "Not Supported renderer type. (arg)options.rendererType:".concat(options.rendererType)
                 });
@@ -5724,10 +5891,10 @@
                 allowedTargetTypes = options.rendererType === RENDERER_TYPE.VIDEO_TAG ? [HTMLMediaElement] : [HTMLCanvasElement, OffscreenCanvas];
                 isTargetTypeValid = _assertClassBrand(_Prober_brand, this, _checkArgTypes).call(this, options.target, allowedTargetTypes);
                 if (isTargetTypeValid) {
-                  _context3.next = 11;
+                  _context6.next = 11;
                   break;
                 }
-                return _context3.abrupt("return", {
+                return _context6.abrupt("return", {
                   code: ERR_CODE.INVALID_ARGS,
                   message: "Invalid target type. (arg)options.target:".concat(options.target)
                 });
@@ -5737,23 +5904,23 @@
                   message: "Video diagnostic is started!",
                   stream: null
                 };
-                _context3.prev = 12;
-                _context3.next = 15;
+                _context6.prev = 12;
+                _context6.next = 15;
                 return navigator.mediaDevices.getUserMedia(constraints);
               case 15:
-                stream = _context3.sent;
+                stream = _context6.sent;
                 diagnosticResult.stream = stream;
                 if (!(options.rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                  _context3.next = 21;
+                  _context6.next = 21;
                   break;
                 }
                 // Render stream to a video element
                 options.target.srcObject = stream;
-                _context3.next = 39;
+                _context6.next = 39;
                 break;
               case 21:
                 if (!(options.rendererType === RENDERER_TYPE.WEBGL || options.rendererType === RENDERER_TYPE.WEBGL_2 || options.rendererType === RENDERER_TYPE.WEBGPU)) {
-                  _context3.next = 39;
+                  _context6.next = 39;
                   break;
                 }
                 // Create a video element as the source seeding to a canvas for rendering
@@ -5764,7 +5931,7 @@
                 video.autoplay = true;
                 video.muted = true;
                 video.srcObject = stream;
-                _context3.next = 31;
+                _context6.next = 31;
                 return video.play();
               case 31:
                 videoTrack = stream.getVideoTracks()[0];
@@ -5791,21 +5958,21 @@
                 rendersProxy = RenderersProxy.getInstance();
                 rendersProxy.preview(options.rendererType, video, options.target, viewport);
               case 39:
-                return _context3.abrupt("return", diagnosticResult);
+                return _context6.abrupt("return", diagnosticResult);
               case 42:
-                _context3.prev = 42;
-                _context3.t0 = _context3["catch"](12);
-                return _context3.abrupt("return", {
-                  code: _context3.t0.code,
-                  message: "Failed to start video diagnostic. Error: ".concat(_context3.t0.message)
+                _context6.prev = 42;
+                _context6.t0 = _context6["catch"](12);
+                return _context6.abrupt("return", {
+                  code: _context6.t0.code,
+                  message: "Failed to start video diagnostic. Error: ".concat(_context6.t0.message)
                 });
               case 45:
               case "end":
-                return _context3.stop();
+                return _context6.stop();
             }
-          }, _callee3, this, [[12, 42]]);
+          }, _callee6, this, [[12, 42]]);
         }));
-        function diagnoseVideo(_x2, _x3) {
+        function diagnoseVideo(_x4, _x5) {
           return _diagnoseVideo.apply(this, arguments);
         }
         return diagnoseVideo;
@@ -5992,7 +6159,7 @@
     }, {
       key: "startToDiagnose",
       value: function startToDiagnose() {
-        var _this2 = this;
+        var _this = this;
         var jsUrl = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "prober.js";
         var wasmUrl = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "prober.wasm";
         var config = arguments.length > 2 ? arguments[2] : undefined;
@@ -6010,7 +6177,7 @@
               resolve(report);
             }
           };
-          _classPrivateFieldGet2(_networkAgent, _this2).diagnose(jsUrl, wasmUrl, config, proberObserverProxy);
+          _classPrivateFieldGet2(_networkAgent, _this).diagnose(jsUrl, wasmUrl, config, proberObserverProxy);
         });
       }
 
@@ -6040,19 +6207,19 @@
     }, {
       key: "stopToDiagnose",
       value: (function () {
-        var _stopToDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
-          return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-            while (1) switch (_context4.prev = _context4.next) {
+        var _stopToDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+          return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+            while (1) switch (_context7.prev = _context7.next) {
               case 0:
-                _context4.next = 2;
+                _context7.next = 2;
                 return _classPrivateFieldGet2(_networkAgent, this).stopDiagnose();
               case 2:
-                return _context4.abrupt("return", _context4.sent);
+                return _context7.abrupt("return", _context7.sent);
               case 3:
               case "end":
-                return _context4.stop();
+                return _context7.stop();
             }
-          }, _callee4, this);
+          }, _callee7, this);
         }));
         function stopToDiagnose() {
           return _stopToDiagnose.apply(this, arguments);
@@ -6100,96 +6267,76 @@
     }
     return hasOneTypePassCheck;
   }
-  function _isRendererTypeSupported(_x4) {
+  function _isRendererTypeSupported(_x6) {
     return _isRendererTypeSupported2.apply(this, arguments);
   }
   function _isRendererTypeSupported2() {
-    _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(rendererType) {
-      return _regeneratorRuntime().wrap(function _callee6$(_context6) {
-        while (1) switch (_context6.prev = _context6.next) {
+    _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(rendererType) {
+      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+        while (1) switch (_context9.prev = _context9.next) {
           case 0:
-            return _context6.abrupt("return", new Promise( /*#__PURE__*/function () {
-              var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(resolve) {
+            return _context9.abrupt("return", new Promise( /*#__PURE__*/function () {
+              var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(resolve) {
                 var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
-                return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-                  while (1) switch (_context5.prev = _context5.next) {
+                return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+                  while (1) switch (_context8.prev = _context8.next) {
                     case 0:
                       if (!(rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                        _context5.next = 4;
+                        _context8.next = 4;
                         break;
                       }
                       resolve(true);
-                      _context5.next = 22;
+                      _context8.next = 22;
                       break;
                     case 4:
                       if (!(rendererType === RENDERER_TYPE.WEBGL)) {
-                        _context5.next = 9;
+                        _context8.next = 9;
                         break;
                       }
                       isWebGLSupported = Feature.isWebGLSupported();
                       resolve(isWebGLSupported);
-                      _context5.next = 22;
+                      _context8.next = 22;
                       break;
                     case 9:
                       if (!(rendererType === RENDERER_TYPE.WEBGL_2)) {
-                        _context5.next = 14;
+                        _context8.next = 14;
                         break;
                       }
                       isWebGL2Supported = Feature.isWebGL2Supported();
                       resolve(isWebGL2Supported);
-                      _context5.next = 22;
+                      _context8.next = 22;
                       break;
                     case 14:
                       if (!(rendererType === RENDERER_TYPE.WEBGPU)) {
-                        _context5.next = 21;
+                        _context8.next = 21;
                         break;
                       }
-                      _context5.next = 17;
+                      _context8.next = 17;
                       return Feature.isWebGPUSupported();
                     case 17:
-                      isWebGPUSupported = _context5.sent;
+                      isWebGPUSupported = _context8.sent;
                       resolve(isWebGPUSupported);
-                      _context5.next = 22;
+                      _context8.next = 22;
                       break;
                     case 21:
                       resolve(false);
                     case 22:
                     case "end":
-                      return _context5.stop();
+                      return _context8.stop();
                   }
-                }, _callee5);
+                }, _callee8);
               }));
-              return function (_x5) {
-                return _ref.apply(this, arguments);
+              return function (_x7) {
+                return _ref3.apply(this, arguments);
               };
             }()));
           case 1:
           case "end":
-            return _context6.stop();
+            return _context9.stop();
         }
-      }, _callee6);
+      }, _callee9);
     }));
     return _isRendererTypeSupported2.apply(this, arguments);
-  }
-  function _playAudioWithAudioContext(audioContext, blob) {
-    return _assertClassBrand(_Prober_brand, this, _blobToArrayBuffer).call(this, blob).then(function (arrayBuffer) {
-      return audioContext.decodeAudioData(arrayBuffer);
-    }).then(function (audioBuffer) {
-      var source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-    });
-  }
-  function _blobToArrayBuffer(blob) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onloadend = function () {
-        return resolve(reader.result);
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(blob);
-    });
   }
 
   exports.BANDWIDTH_QUALITY_LEVEL = BANDWIDTH_QUALITY_LEVEL;
