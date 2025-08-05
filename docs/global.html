@@ -2406,7 +2406,7 @@ It will be used to determine the type of data you received and how to handle the
     
 
     
-    <h4 class="name" id="diagnoseAudio"><span class="type-signature"></span>diagnoseAudio<span class="signature">(inputConstraints, outputConstraints, duration<span class="signature-attributes">opt</span>, mimeType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="global.html#DiagnosticResult">DiagnosticResult</a>}</span></h4>
+    <h4 class="name" id="diagnoseAudio"><span class="type-signature">(async) </span>diagnoseAudio<span class="signature">(inputConstraints, outputConstraints, duration<span class="signature-attributes">opt</span>, mimeType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;<a href="global.html#DiagnosticResult">DiagnosticResult</a>>}</span></h4>
     
 
     
@@ -2414,10 +2414,9 @@ It will be used to determine the type of data you received and how to handle the
 
 
 <div class="description">
-    <p>Performs audio diagnostic by recording audio from an input device and playing it through an output device.
-Diagnose any audio input/output devices by passing the constraints of the selected devices.
-Adjust how long you record the audio by setting the duration parameter. Specify the mime type of how
-to record the audio by setting the mimeType parameter.</p>
+    <p>Performs an asynchronous audio diagnostic by recording audio from a specified input device
+and playing it back through a specified output device. Supports custom recording duration,
+MIME type selection, and captures all errors, returning them as a <a href="global.html#DiagnosticResult">DiagnosticResult</a>.</p>
 </div>
 
 
@@ -2485,7 +2484,9 @@ to record the audio by setting the mimeType parameter.</p>
                 </td>
             
 
-            <td class="description last"><p>The constraints for capturing audio from input devices.</p></td>
+            <td class="description last"><ul>
+<li>Constraints for capturing audio input, e.g. <code>{ audio: { deviceId: 'xxx' }, video: false }</code>.</li>
+</ul></td>
         </tr>
 
     
@@ -2498,7 +2499,7 @@ to record the audio by setting the mimeType parameter.</p>
             <td class="type">
             
                 
-<span class="param-type">MediaStreamConstraints</span>
+<span class="param-type">Object</span>
 
 
             
@@ -2520,7 +2521,107 @@ to record the audio by setting the mimeType parameter.</p>
                 </td>
             
 
-            <td class="description last"><p>The constraints for playing audio through output devices.</p></td>
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>audio</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deviceId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><ul>
+<li>The deviceId of the audio output device; required.</li>
+</ul></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -2559,7 +2660,9 @@ to record the audio by setting the mimeType parameter.</p>
                 </td>
             
 
-            <td class="description last"><p>The duration of the recording in milliseconds. If 0, 5000 milliseconds is used as default value.</p></td>
+            <td class="description last"><ul>
+<li>Recording duration in milliseconds. If 0 or unspecified, defaults to 5000 ms. Maximum allowed is 60000 ms.</li>
+</ul></td>
         </tr>
 
     
@@ -2573,9 +2676,6 @@ to record the audio by setting the mimeType parameter.</p>
             
                 
 <span class="param-type">string</span>
-|
-
-<span class="param-type">undefined</span>
 
 
             
@@ -2601,8 +2701,9 @@ to record the audio by setting the mimeType parameter.</p>
                 </td>
             
 
-            <td class="description last"><p>The MIME type of the recorded audio. Default is an empty string. If pass an empty string or undefined,
-the mime type 'audio/webm;codecs=opus' will be used as the default value.</p></td>
+            <td class="description last"><ul>
+<li>MIME type for recording. If empty or undefined, attempts <code>&quot;audio/webm;codecs=opus&quot;</code>, then <code>&quot;audio/mp4&quot;</code>, then <code>&quot;audio/mp3&quot;</code>.</li>
+</ul></td>
         </tr>
 
     
@@ -2661,43 +2762,20 @@ the mime type 'audio/webm;codecs=opus' will be used as the default value.</p></t
 
 
 
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        <p>If any parameters are invalid, a customized Error will be thrown.
-The standard exceptions, like <a href="https://developer.mozilla.org/en-US/docs/Web/API/DOMException">DOMException</a>, will be thrown if are captured while recording and playing.</p>
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">Error</span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
 
 
 <h5>Returns:</h5>
 
         
 <div class="param-desc">
-    <p>An object indicating the result of the audio diagnostic.</p>
+    <ul>
+<li>Resolves to a <a href="global.html#DiagnosticResult">DiagnosticResult</a> object:
+<ul>
+<li>On success: <code>{ code: ERR_CODE.OK, message: &quot;audio diagnostic complete!&quot; }</code></li>
+<li>On failure: contains the appropriate error code and message (e.g. permission denied, initialization failure, AudioContext/MediaRecorder creation failure, etc.).</li>
+</ul>
+</li>
+</ul>
 </div>
 
 
@@ -2708,7 +2786,7 @@ The standard exceptions, like <a href="https://developer.mozilla.org/en-US/docs/
     </dt>
     <dd>
         
-<span class="param-type"><a href="global.html#DiagnosticResult">DiagnosticResult</a></span>
+<span class="param-type">Promise.&lt;<a href="global.html#DiagnosticResult">DiagnosticResult</a>></span>
 
 
     </dd>
@@ -2721,22 +2799,16 @@ The standard exceptions, like <a href="https://developer.mozilla.org/en-US/docs/
 
     <h5>Example</h5>
     
-    <pre class="prettyprint"><code>const audioInputConstraint = {
- audio: { deviceId: 'default' },
- video: false,
-};
-
-const audioOutputConstraint = {
- audio: { deviceId: 'xxxxxxxxxxxxxxxx' },
- video: false,
-};
-
-try {
- const diagnoseResult = prober.diagnoseAudio(audioInputConstraint, audioOutputConstraint, 0, '');
- console.log(diagnoseResult);
-} catch (e) {
- console.error(e);
-}</code></pre>
+    <pre class="prettyprint"><code>(async () => {
+  const input = { audio: { deviceId: 'default' }, video: false };
+  const output = { audio: { deviceId: 'xxxxxx' }, video: false };
+  const result = await diagnoseAudio(input, output, 10000, '');
+  if (result.code === ERR_CODE.OK) {
+    console.log('Diagnostic completed successfully');
+  } else {
+    console.error('Diagnostic failed:', result.message);
+  }
+})();</code></pre>
 
 
 
@@ -5696,7 +5768,7 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
 
 
 <div class="description">
-    <p>An object represents the result of diagnostics.</p>
+    <p>Diagnostic result object.</p>
 </div>
 
 
@@ -5729,6 +5801,8 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -5754,10 +5828,18 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>an error code defined by <a href="global.html#ERR_CODE">ERR_CODE</a>.</p></td>
+            <td class="description last"><ul>
+<li>Status code from <a href="global.html#ERR_CODE">ERR_CODE</a>. 0 indicates success; non-zero indicates an error.</li>
+</ul></td>
         </tr>
 
     
@@ -5777,10 +5859,18 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>an error message.</p></td>
+            <td class="description last"><ul>
+<li>A brief description or error message for this diagnostic result.</li>
+</ul></td>
         </tr>
 
     
@@ -5800,10 +5890,20 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>a stream that contains a specified list of tracks of video. It's optional but necessary when stopping to diagnose a video device.</p></td>
+            <td class="description last"><ul>
+<li>Optional. A MediaStream containing specified tracks (e.g. used when diagnosing video devices). Not always present for audio diagnostics.</li>
+</ul></td>
         </tr>
 
     
@@ -8112,7 +8212,7 @@ call <a href="global.html#releaseMediaStream">releaseMediaStream</a> to manually
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jun 14 2025 17:40:33 GMT+0800 (China Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jul 12 2025 16:01:06 GMT+0800 (China Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

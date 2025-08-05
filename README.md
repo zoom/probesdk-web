@@ -107,7 +107,7 @@ function startToDiagnoseAudio() {
   };
 
   const duration = 5000; // how long you want to record the sound, milliseconds
-  const diagnoseResult = prober.diagnoseAudio(
+  const diagnoseResult = await prober.diagnoseAudio(
     audioInputConstraint,
     audioOutputConstraint,
     duration
