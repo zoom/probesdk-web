@@ -2,7 +2,7 @@
 
 ## Background
 
-[Zoom Probe SDK](https://developers.zoom.us/docs/probe-sdk/) is a tool that you can use to check if audio and video hardware, network, and Zoom infrastructure offers the best experience for your users. This readme will quickly get you started. For full documentation on usage, see the [developer documentation](https://developers.zoom.us/docs/probe-sdk/). For details about all of the SDK methods, see the [SDK reference](https://developers.zoom.us/docs/probe-sdk/reference/).
+[Zoom Probe SDK](https://developers.zoom.us/docs/probe-sdk/) is a tool that you can use to check if audio and video hardware, network, and Zoom infrastructure offers the best experience for your users. This readme will quickly get you started. For full documentation on usage, see the [developer documentation](https://developers.zoom.us/docs/probe-sdk/). For details about all of the SDK methods, see the [SDK reference](https://marketplacefront.zoom.us/sdk/probe/index.html).
 
 ## Install
 
