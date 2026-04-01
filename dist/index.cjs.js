@@ -14,6 +14,27 @@ function _classPrivateFieldGet2(s, a) {
 function _classPrivateFieldSet2(s, a, r) {
   return s.set(_assertClassBrand(s, a), r), r;
 }
+function ownKeys(e, r) {
+  var t = Object.keys(e);
+  if (Object.getOwnPropertySymbols) {
+    var o = Object.getOwnPropertySymbols(e);
+    r && (o = o.filter(function (r) {
+      return Object.getOwnPropertyDescriptor(e, r).enumerable;
+    })), t.push.apply(t, o);
+  }
+  return t;
+}
+function _objectSpread2(e) {
+  for (var r = 1; r < arguments.length; r++) {
+    var t = null != arguments[r] ? arguments[r] : {};
+    r % 2 ? ownKeys(Object(t), !0).forEach(function (r) {
+      _defineProperty(e, r, t[r]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) {
+      Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+    });
+  }
+  return e;
+}
 function _regeneratorRuntime() {
   _regeneratorRuntime = function () {
     return e;
@@ -511,7 +532,13 @@ var ERR_CODE = {
   FAILED_TO_CREATE_AUDIO_CONTEXT: -5,
   FAILED_TO_CREATE_MEDIA_RECORDER: -6,
   FAILED_TO_RECORD: -7,
-  FAILED_TO_PLAY: -8
+  FAILED_TO_PLAY: -8,
+  FAILED_TO_DUMP_CAMERA: -9,
+  FAILED_TO_BUILD_BUNDLE: -10,
+  SCREEN_SHARE_STATIC_CHECK_FAILED: -11,
+  SCREEN_SHARE_PERMISSION_DENIED: -12,
+  SCREEN_SHARE_USER_CANCELLED: -13,
+  SCREEN_SHARE_BLACK_SCREEN: -14
 };
 
 /**
@@ -549,10 +576,10 @@ var NET_PROBING_DATA_TYPE = {
  * Enumeration of the protocol type that ProbeSDK checks in a network diagnostic.
  *
  * @enum {number}
- * @property {number} HTTPS https(https://) protocol. Default value is 1.
- * @property {number} WEB_SOCKET WebSocket(wss:// ws://) protocol. Default value is 2.
- * @property {number} DATA_CHANNEL the data channel which is used for media communication. Default value is 3.
- * @property {number} WEB_TRANSPORT WebTransport protocol(not supported now). Default value is 4.
+ * @property {number} HTTPS Hypertext Transfer Protocol Secure (https://) protocol. Value: 1. Critical requirement: If this diagnostic fails, the user environment cannot support the SDK.
+ * @property {number} WEB_SOCKET WebSocket (wss://, ws://) protocol. Value: 2. Critical requirement: If this diagnostic fails, the user environment cannot support the SDK.
+ * @property {number} DATA_CHANNEL Data channel for media communication. Value: 3. If this diagnostic fails, the SDK automatically switches to WebSocket protocol for communication. Users can still use the SDK with reduced performance.
+ * @property {number} WEB_TRANSPORT WebTransport protocol. Value: 4. Currently not supported. The result of this diagnostic does not affect SDK functionality.
  * @constant
  */
 var PROTOCOL_TYPE = {
@@ -3440,6 +3467,7 @@ function _report5x5DesktopGalleryViewSupported() {
   return _assertClassBrand(_Reporter_brand, this, _genReportEntry).call(this, SUPPORTED_FEATURE_INDEX.DT_GALLERY_VIEW_5x5, "5x5 Desktop Gallery View", isHwConcurrencySupported && isOffscreenCanvasSupported && isSabSupported, checkList);
 }
 function _reportScreenSharingSupported() {
+  var _navigator$mediaDevic, _navigator$mediaDevic2, _navigator$mediaDevic3;
   var checkList = [];
   var isMobileDevice = OS.isMobileDevice(navigator);
   var osReqEntry = GEN_OS_REQ(!isMobileDevice, "non-mobile OS required", OS.getOSName(navigator));
@@ -3458,6 +3486,19 @@ function _reportScreenSharingSupported() {
   var isOffscreenCanvasSupported = Feature.isOffscreenCanvasSupported();
   var offscreenCanvasApiReqEntry = GEN_API_REQUIRED(isOffscreenCanvasSupported, "OffscreenCanvas", "".concat(isOffscreenCanvasSupported));
   checkList.push(offscreenCanvasApiReqEntry);
+
+  // 5. Secure context — getDisplayMedia requires HTTPS by spec
+  var isSecureContext = typeof window !== "undefined" && window.isSecureContext === true;
+  checkList.push(GEN_API_REQUIRED(isSecureContext, "Secure Context (HTTPS)", "".concat(isSecureContext)));
+
+  // 6. Permissions API availability
+  var hasPermissionsApi = typeof navigator !== "undefined" && typeof navigator.permissions !== "undefined";
+  checkList.push(GEN_API_REQUIRED(hasPermissionsApi, "Permissions API", "".concat(hasPermissionsApi)));
+
+  // 7. displaySurface constraint support
+  var supportedConstraints = (_navigator$mediaDevic = (_navigator$mediaDevic2 = navigator.mediaDevices) === null || _navigator$mediaDevic2 === void 0 || (_navigator$mediaDevic3 = _navigator$mediaDevic2.getSupportedConstraints) === null || _navigator$mediaDevic3 === void 0 ? void 0 : _navigator$mediaDevic3.call(_navigator$mediaDevic2)) !== null && _navigator$mediaDevic !== void 0 ? _navigator$mediaDevic : {};
+  var hasDisplaySurface = ("displaySurface" in supportedConstraints);
+  checkList.push(GEN_API_REQUIRED(hasDisplaySurface, "displaySurface constraint", "".concat(hasDisplaySurface)));
   var _isBrowserSupported = isChrome.matched || isFirefox.matched || isEdge.matched || isOpera || isSafari.matched && isSafari.version >= 17 && isOffscreenCanvasSupported;
   return _assertClassBrand(_Reporter_brand, this, _genReportEntry).call(this, SUPPORTED_FEATURE_INDEX.SCREEN_SHARING, "Screen Sharing", !isMobileDevice && _isBrowserSupported && isGdmApiSupported, checkList);
 }
@@ -4358,6 +4399,1484 @@ var RenderersProxy = /*#__PURE__*/function () {
 }();
 
 /**
+ * Minimal TAR (ustar) builder for browser use.
+ * - No dependencies
+ * - Supports regular files only
+ * - Returns a Blob that can be downloaded and later extracted with standard tar tools
+ *
+ * @module
+ * @ignore
+ */
+
+function padNull(str, len) {
+  var bytes = new Uint8Array(len);
+  var enc = new TextEncoder();
+  var src = enc.encode(str);
+  bytes.set(src.slice(0, len));
+  return bytes;
+}
+function padOctal(value, len) {
+  // TAR numeric fields are octal ASCII, null-terminated, padded with spaces.
+  // Common practice: left-pad with '0', end with '\0' and maybe ' '.
+  var s = value.toString(8);
+  var str = s.padStart(len - 1, "0") + "\0";
+  var bytes = new Uint8Array(len);
+  var enc = new TextEncoder();
+  bytes.set(enc.encode(str).slice(0, len));
+  return bytes;
+}
+function checksum(header) {
+  // checksum field (148..155) should be treated as spaces
+  var sum = 0;
+  for (var i = 0; i < header.length; i++) {
+    var b = header[i];
+    if (i >= 148 && i < 156) {
+      sum += 0x20;
+    } else {
+      sum += b;
+    }
+  }
+  return sum;
+}
+function writeChecksum(header, sum) {
+  // 8 bytes: 6 digits, null, space
+  var str = sum.toString(8).padStart(6, "0") + "\0 ";
+  var enc = new TextEncoder();
+  header.set(enc.encode(str).slice(0, 8), 148);
+}
+function makeHeader(name, size, mtimeSec) {
+  var header = new Uint8Array(512);
+  header.set(padNull(name, 100), 0);
+  header.set(padOctal(420, 8), 100); // mode
+  header.set(padOctal(0, 8), 108); // uid
+  header.set(padOctal(0, 8), 116); // gid
+  header.set(padOctal(size, 12), 124); // size
+  header.set(padOctal(mtimeSec, 12), 136); // mtime
+  // checksum field left blank for now (will be spaces during calculation)
+  header.set(padNull("0", 1), 156); // typeflag '0' = regular file
+  header.set(padNull("", 100), 157); // linkname
+  header.set(padNull("ustar\0", 6), 257); // magic
+  header.set(padNull("00", 2), 263); // version
+  header.set(padNull("probesdk", 32), 265); // uname
+  header.set(padNull("probesdk", 32), 297); // gname
+  // devmajor/devminor/prefix left empty
+
+  var sum = checksum(header);
+  writeChecksum(header, sum);
+  return header;
+}
+function padTo512(n) {
+  var rem = n % 512;
+  return rem === 0 ? 0 : 512 - rem;
+}
+function toBytes(_x) {
+  return _toBytes.apply(this, arguments);
+}
+/**
+ * @ignore
+ * @typedef {Object} TarEntry
+ * @property {string} name file path inside tar, e.g. "meta.json"
+ * @property {string|Uint8Array|ArrayBuffer|Blob|Object} data file data
+ */
+/**
+ * Build a TAR blob from entries.
+ * @ignore
+ * @param {TarEntry[]} entries
+ * @returns {Promise<Blob>}
+ */
+function _toBytes() {
+  _toBytes = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(data) {
+    var ab;
+    return _regeneratorRuntime().wrap(function _callee$(_context) {
+      while (1) switch (_context.prev = _context.next) {
+        case 0:
+          if (!(data == null)) {
+            _context.next = 2;
+            break;
+          }
+          return _context.abrupt("return", new Uint8Array());
+        case 2:
+          if (!(data instanceof Uint8Array)) {
+            _context.next = 4;
+            break;
+          }
+          return _context.abrupt("return", data);
+        case 4:
+          if (!(typeof data === "string")) {
+            _context.next = 6;
+            break;
+          }
+          return _context.abrupt("return", new TextEncoder().encode(data));
+        case 6:
+          if (!(data instanceof ArrayBuffer)) {
+            _context.next = 8;
+            break;
+          }
+          return _context.abrupt("return", new Uint8Array(data));
+        case 8:
+          if (!(data instanceof Blob)) {
+            _context.next = 13;
+            break;
+          }
+          _context.next = 11;
+          return data.arrayBuffer();
+        case 11:
+          ab = _context.sent;
+          return _context.abrupt("return", new Uint8Array(ab));
+        case 13:
+          return _context.abrupt("return", new TextEncoder().encode(JSON.stringify(data)));
+        case 14:
+        case "end":
+          return _context.stop();
+      }
+    }, _callee);
+  }));
+  return _toBytes.apply(this, arguments);
+}
+function buildTarBlob(_x2) {
+  return _buildTarBlob.apply(this, arguments);
+}
+
+/**
+ * Optionally gzip a blob using CompressionStream (Chrome).
+ * @ignore
+ * @param {Blob} blob
+ * @returns {Promise<Blob>}
+ */
+function _buildTarBlob() {
+  _buildTarBlob = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(entries) {
+    var parts, nowSec, _iterator, _step, entry, name, bytes, header, padding;
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
+        case 0:
+          parts = [];
+          nowSec = Math.floor(Date.now() / 1000);
+          _iterator = _createForOfIteratorHelper(entries);
+          _context2.prev = 3;
+          _iterator.s();
+        case 5:
+          if ((_step = _iterator.n()).done) {
+            _context2.next = 18;
+            break;
+          }
+          entry = _step.value;
+          name = entry.name || "unnamed";
+          _context2.next = 10;
+          return toBytes(entry.data);
+        case 10:
+          bytes = _context2.sent;
+          header = makeHeader(name, bytes.byteLength, nowSec);
+          parts.push(header);
+          parts.push(bytes);
+          padding = padTo512(bytes.byteLength);
+          if (padding > 0) parts.push(new Uint8Array(padding));
+        case 16:
+          _context2.next = 5;
+          break;
+        case 18:
+          _context2.next = 23;
+          break;
+        case 20:
+          _context2.prev = 20;
+          _context2.t0 = _context2["catch"](3);
+          _iterator.e(_context2.t0);
+        case 23:
+          _context2.prev = 23;
+          _iterator.f();
+          return _context2.finish(23);
+        case 26:
+          // end with two 512-byte blocks of zeros
+          parts.push(new Uint8Array(1024));
+          return _context2.abrupt("return", new Blob(parts, {
+            type: "application/x-tar"
+          }));
+        case 28:
+        case "end":
+          return _context2.stop();
+      }
+    }, _callee2, null, [[3, 20, 23, 26]]);
+  }));
+  return _buildTarBlob.apply(this, arguments);
+}
+function gzipBlobIfSupported(_x3) {
+  return _gzipBlobIfSupported.apply(this, arguments);
+}
+function _gzipBlobIfSupported() {
+  _gzipBlobIfSupported = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(blob) {
+    var cs, stream;
+    return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+      while (1) switch (_context3.prev = _context3.next) {
+        case 0:
+          if (!(typeof CompressionStream !== "function")) {
+            _context3.next = 2;
+            break;
+          }
+          return _context3.abrupt("return", blob);
+        case 2:
+          cs = new CompressionStream("gzip");
+          stream = blob.stream().pipeThrough(cs);
+          _context3.next = 6;
+          return new Response(stream).blob();
+        case 6:
+          return _context3.abrupt("return", _context3.sent);
+        case 7:
+        case "end":
+          return _context3.stop();
+      }
+    }, _callee3);
+  }));
+  return _gzipBlobIfSupported.apply(this, arguments);
+}
+
+function pickMimeType() {
+  var candidates = ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm"];
+  for (var _i = 0, _candidates = candidates; _i < _candidates.length; _i++) {
+    var mt = _candidates[_i];
+    try {
+      if (MediaRecorder.isTypeSupported(mt)) return mt;
+    } catch (_) {}
+  }
+  return "";
+}
+function safeNowMs() {
+  try {
+    return performance.now();
+  } catch (_) {
+    return Date.now();
+  }
+}
+function triggerDownload(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () {
+    return URL.revokeObjectURL(url);
+  }, 10000);
+}
+function formatTsForName() {
+  var d = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new Date();
+  var pad2 = function pad2(n) {
+    return String(n).padStart(2, "0");
+  };
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "_" + pad2(d.getHours()) + "-" + pad2(d.getMinutes()) + "-" + pad2(d.getSeconds());
+}
+function toJsonlLine(obj) {
+  return JSON.stringify(obj) + "\n";
+}
+function computeLumaStats(imageData) {
+  // imageData.data is RGBA
+  var data = imageData.data;
+  var sum = 0;
+  var min = 255;
+  var max = 0;
+  // 16-bin histogram over luma [0..255]
+  var hist = new Array(16).fill(0);
+  for (var i = 0; i < data.length; i += 4) {
+    var r = data[i];
+    var g = data[i + 1];
+    var b = data[i + 2];
+    // Rec. 709 luma
+    var y = 0.2126 * r + 0.7152 * g + 0.0722 * b | 0;
+    sum += y;
+    if (y < min) min = y;
+    if (y > max) max = y;
+    hist[y / 16 | 0] += 1;
+  }
+  var count = data.length / 4;
+  var mean = count > 0 ? sum / count : 0;
+  return {
+    mean: mean,
+    min: min,
+    max: max,
+    hist: hist
+  };
+}
+
+/**
+ * @ignore
+ * @typedef {Object} CameraDumpOptions
+ * @property {string} [deviceId] Optional. If omitted, browser will pick the default camera.
+ * @property {number} [width=320]
+ * @property {number} [height=180]
+ * @property {number} [frameRate=15]
+ * @property {number} [durationMs=120000]
+ * @property {number} [videoBitsPerSecond=250000]
+ * @property {number} [analysisDownscaleWidth=64]
+ * @property {number} [analysisDownscaleHeight=36]
+ * @property {number} [thumbFps=0] 0 disables thumbnails
+ * @property {boolean} [gzip=false] whether to gzip the tar bundle (Chrome only)
+ * @property {function(Object): void} [onProgress] Optional progress callback.
+ */
+
+/**
+ * @ignore
+ */
+var CameraDumpSession = /*#__PURE__*/function () {
+  function CameraDumpSession(opts) {
+    _classCallCheck(this, CameraDumpSession);
+    this.opts = opts;
+    this.state = "init";
+    this.stream = null;
+    this._events = [];
+    this._framesJsonl = [];
+    this._videoBlobs = [];
+    this._startWallMs = 0;
+    this._stopWallMs = 0;
+    this._stopRequested = false;
+    this._mediaRecorder = null;
+    this._trackReader = null;
+    this._processor = null;
+    this._analysisCanvas = null;
+    this._analysisCtx = null;
+    this._thumbLastMs = 0;
+    this._thumbEntries = [];
+    this._frameCount = 0;
+    this._blackCount = 0;
+  }
+  return _createClass(CameraDumpSession, [{
+    key: "_emitProgress",
+    value: function _emitProgress() {
+      var extra = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var cb = this.opts.onProgress;
+      if (typeof cb !== "function") return;
+      var elapsedMs = this._startWallMs > 0 ? Math.max(0, safeNowMs() - this._startWallMs) : 0;
+      var blackRatio = this._frameCount > 0 ? this._blackCount / this._frameCount : 0;
+      cb(_objectSpread2({
+        state: this.state,
+        elapsedMs: elapsedMs,
+        frames: this._frameCount,
+        blackFrames: this._blackCount,
+        blackRatio: blackRatio
+      }, extra));
+    }
+  }, {
+    key: "_logEvent",
+    value: function _logEvent(type, detail) {
+      this._events.push({
+        tWallMs: safeNowMs(),
+        type: type,
+        detail: detail == null ? "" : String(detail)
+      });
+    }
+  }, {
+    key: "start",
+    value: function () {
+      var _start = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var _this = this,
+          _videoTrack$addEventL;
+        var _ref, deviceId, _ref$width, width, _ref$height, height, _ref$frameRate, frameRate, _ref$durationMs, durationMs, _ref$analysisDownscal, analysisDownscaleWidth, _ref$analysisDownscal2, analysisDownscaleHeight, _ref$thumbFps, thumbFps, _ref$videoBitsPerSeco, videoBitsPerSecond, mimeType, videoConstraints, constraints, stream, videoTrack, stopAtWallMs, stopTimer, thumbIntervalMs, analysisW, analysisH, lumaBlackThresholdMean, lumaBlackThresholdMax, tickProgressEveryN, loop;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              _ref = this.opts || {}, deviceId = _ref.deviceId, _ref$width = _ref.width, width = _ref$width === void 0 ? 320 : _ref$width, _ref$height = _ref.height, height = _ref$height === void 0 ? 180 : _ref$height, _ref$frameRate = _ref.frameRate, frameRate = _ref$frameRate === void 0 ? 15 : _ref$frameRate, _ref$durationMs = _ref.durationMs, durationMs = _ref$durationMs === void 0 ? 120000 : _ref$durationMs, _ref$analysisDownscal = _ref.analysisDownscaleWidth, analysisDownscaleWidth = _ref$analysisDownscal === void 0 ? 64 : _ref$analysisDownscal, _ref$analysisDownscal2 = _ref.analysisDownscaleHeight, analysisDownscaleHeight = _ref$analysisDownscal2 === void 0 ? 36 : _ref$analysisDownscal2, _ref$thumbFps = _ref.thumbFps, thumbFps = _ref$thumbFps === void 0 ? 0 : _ref$thumbFps, _ref$videoBitsPerSeco = _ref.videoBitsPerSecond, videoBitsPerSecond = _ref$videoBitsPerSeco === void 0 ? 250000 : _ref$videoBitsPerSeco; // deviceId is optional. If not provided, browser will pick the default camera.
+              if (!(typeof MediaRecorder !== "function")) {
+                _context2.next = 3;
+                break;
+              }
+              return _context2.abrupt("return", {
+                code: ERR_CODE.API_NOT_SUPPORTED,
+                message: "MediaRecorder is not supported"
+              });
+            case 3:
+              if (!(typeof MediaStreamTrackProcessor !== "function")) {
+                _context2.next = 5;
+                break;
+              }
+              return _context2.abrupt("return", {
+                code: ERR_CODE.API_NOT_SUPPORTED,
+                message: "MediaStreamTrackProcessor is not supported (Chrome-only API)"
+              });
+            case 5:
+              mimeType = pickMimeType();
+              if (mimeType) {
+                _context2.next = 8;
+                break;
+              }
+              return _context2.abrupt("return", {
+                code: ERR_CODE.MIME_TYPE_NOT_SUPPORTED,
+                message: "No supported MediaRecorder mimeType for video/webm"
+              });
+            case 8:
+              this.state = "starting";
+              this._emitProgress({
+                mimeType: mimeType
+              });
+              videoConstraints = {
+                width: {
+                  ideal: width
+                },
+                height: {
+                  ideal: height
+                },
+                frameRate: {
+                  ideal: frameRate
+                }
+              }; // Only constrain deviceId when explicitly provided.
+              if (deviceId) {
+                videoConstraints.deviceId = {
+                  exact: deviceId
+                };
+              }
+              constraints = {
+                audio: false,
+                video: videoConstraints
+              };
+              _context2.prev = 13;
+              _context2.next = 16;
+              return navigator.mediaDevices.getUserMedia(constraints);
+            case 16:
+              stream = _context2.sent;
+              _context2.next = 22;
+              break;
+            case 19:
+              _context2.prev = 19;
+              _context2.t0 = _context2["catch"](13);
+              return _context2.abrupt("return", {
+                code: ERR_CODE.FAILED_TO_GET_USER_MEDIA,
+                message: "getUserMedia failed: ".concat(_context2.t0.message)
+              });
+            case 22:
+              this.stream = stream;
+              this._startWallMs = safeNowMs();
+              this._logEvent("start", "camera dump started");
+              videoTrack = stream.getVideoTracks()[0];
+              if (videoTrack) {
+                _context2.next = 29;
+                break;
+              }
+              this.stopTracks();
+              return _context2.abrupt("return", {
+                code: ERR_CODE.FAILED_TO_DUMP_CAMERA,
+                message: "no video track"
+              });
+            case 29:
+              // track events
+              videoTrack.onmute = function () {
+                return _this._logEvent("track.mute", "");
+              };
+              videoTrack.onunmute = function () {
+                return _this._logEvent("track.unmute", "");
+              };
+              videoTrack.onended = function () {
+                return _this._logEvent("track.ended", "");
+              };
+
+              // analysis setup
+              _context2.prev = 32;
+              this._processor = new MediaStreamTrackProcessor({
+                track: videoTrack
+              });
+              this._trackReader = this._processor.readable.getReader();
+              this._analysisCanvas = typeof OffscreenCanvas === "function" ? new OffscreenCanvas(analysisDownscaleWidth, analysisDownscaleHeight) : document.createElement("canvas");
+              this._analysisCanvas.width = analysisDownscaleWidth;
+              this._analysisCanvas.height = analysisDownscaleHeight;
+              this._analysisCtx = this._analysisCanvas.getContext("2d", {
+                willReadFrequently: true
+              });
+              _context2.next = 45;
+              break;
+            case 41:
+              _context2.prev = 41;
+              _context2.t1 = _context2["catch"](32);
+              this.stopTracks();
+              return _context2.abrupt("return", {
+                code: ERR_CODE.FAILED_TO_DUMP_CAMERA,
+                message: "failed to init frame analysis: ".concat(_context2.t1.message)
+              });
+            case 45:
+              _context2.prev = 45;
+              this._mediaRecorder = new MediaRecorder(stream, {
+                mimeType: mimeType,
+                videoBitsPerSecond: videoBitsPerSecond
+              });
+              _context2.next = 53;
+              break;
+            case 49:
+              _context2.prev = 49;
+              _context2.t2 = _context2["catch"](45);
+              this.stopTracks();
+              return _context2.abrupt("return", {
+                code: ERR_CODE.FAILED_TO_CREATE_MEDIA_RECORDER,
+                message: "failed to create MediaRecorder: ".concat(_context2.t2.message)
+              });
+            case 53:
+              this._mediaRecorder.ondataavailable = function (e) {
+                if (e.data && e.data.size > 0) _this._videoBlobs.push(e.data);
+              };
+              this._mediaRecorder.onerror = function (e) {
+                _this._logEvent("recorder.error", (e === null || e === void 0 ? void 0 : e.message) || String(e));
+              };
+
+              // start loops
+              this.state = "running";
+              this._emitProgress({
+                constraints: constraints
+              });
+              stopAtWallMs = this._startWallMs + Math.max(0, durationMs);
+              stopTimer = setTimeout(function () {
+                return _this.stop();
+              }, Math.max(0, durationMs)); // recorder: timeslice to reduce memory spikes
+              this._mediaRecorder.start(1000);
+
+              // analysis loop
+              thumbIntervalMs = thumbFps > 0 ? 1000 / thumbFps : 0;
+              analysisW = analysisDownscaleWidth;
+              analysisH = analysisDownscaleHeight;
+              lumaBlackThresholdMean = 8; // conservative: near-black
+              lumaBlackThresholdMax = 20;
+              tickProgressEveryN = 30;
+              loop = /*#__PURE__*/function () {
+                var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+                  var res, frame, tWallMs, tsMs, img, stats, isBlack, blob, idx, remainingMs;
+                  return _regeneratorRuntime().wrap(function _callee$(_context) {
+                    while (1) switch (_context.prev = _context.next) {
+                      case 0:
+                        if (_this._stopRequested) {
+                          _context.next = 55;
+                          break;
+                        }
+                        res = void 0;
+                        _context.prev = 2;
+                        _context.next = 5;
+                        return _this._trackReader.read();
+                      case 5:
+                        res = _context.sent;
+                        _context.next = 12;
+                        break;
+                      case 8:
+                        _context.prev = 8;
+                        _context.t0 = _context["catch"](2);
+                        _this._logEvent("analysis.read.error", _context.t0.message);
+                        return _context.abrupt("break", 55);
+                      case 12:
+                        if (!(!res || res.done)) {
+                          _context.next = 14;
+                          break;
+                        }
+                        return _context.abrupt("break", 55);
+                      case 14:
+                        frame = res.value;
+                        tWallMs = safeNowMs();
+                        tsMs = typeof frame.timestamp === "number" ? frame.timestamp / 1000 : tWallMs;
+                        _context.prev = 17;
+                        // draw and read pixels
+                        _this._analysisCtx.drawImage(frame, 0, 0, analysisW, analysisH);
+                        img = _this._analysisCtx.getImageData(0, 0, analysisW, analysisH);
+                        stats = computeLumaStats(img);
+                        isBlack = stats.mean < lumaBlackThresholdMean && stats.max < lumaBlackThresholdMax;
+                        _this._frameCount += 1;
+                        if (isBlack) _this._blackCount += 1;
+                        _this._framesJsonl.push(toJsonlLine({
+                          tWallMs: tWallMs,
+                          tsMs: tsMs,
+                          codedWidth: frame.codedWidth,
+                          codedHeight: frame.codedHeight,
+                          meanLuma: Number(stats.mean.toFixed(2)),
+                          minLuma: stats.min,
+                          maxLuma: stats.max,
+                          hist16: stats.hist,
+                          isBlack: isBlack
+                        }));
+                        if (!(thumbIntervalMs > 0 && tWallMs - _this._thumbLastMs >= thumbIntervalMs)) {
+                          _context.next = 44;
+                          break;
+                        }
+                        _this._thumbLastMs = tWallMs;
+                        // small jpeg thumbnail to help quick visual sanity checks
+                        _context.prev = 27;
+                        if (!(typeof _this._analysisCanvas.convertToBlob === "function")) {
+                          _context.next = 34;
+                          break;
+                        }
+                        _context.next = 31;
+                        return _this._analysisCanvas.convertToBlob({
+                          type: "image/jpeg",
+                          quality: 0.6
+                        });
+                      case 31:
+                        _context.t1 = _context.sent;
+                        _context.next = 37;
+                        break;
+                      case 34:
+                        _context.next = 36;
+                        return new Promise(function (resolve) {
+                          _this._analysisCanvas.toBlob(function (b) {
+                            return resolve(b);
+                          }, "image/jpeg", 0.6);
+                        });
+                      case 36:
+                        _context.t1 = _context.sent;
+                      case 37:
+                        blob = _context.t1;
+                        if (blob) {
+                          idx = String(_this._thumbEntries.length).padStart(4, "0");
+                          _this._thumbEntries.push({
+                            name: "thumbs/".concat(idx, ".jpg"),
+                            blob: blob,
+                            tWallMs: tWallMs,
+                            tsMs: tsMs
+                          });
+                        }
+                        _context.next = 44;
+                        break;
+                      case 41:
+                        _context.prev = 41;
+                        _context.t2 = _context["catch"](27);
+                        _this._logEvent("thumb.error", _context.t2.message);
+                      case 44:
+                        if (_this._frameCount % tickProgressEveryN === 0) {
+                          remainingMs = Math.max(0, stopAtWallMs - tWallMs);
+                          _this._emitProgress({
+                            remainingMs: remainingMs
+                          });
+                        }
+                        _context.next = 50;
+                        break;
+                      case 47:
+                        _context.prev = 47;
+                        _context.t3 = _context["catch"](17);
+                        _this._logEvent("analysis.frame.error", _context.t3.message);
+                      case 50:
+                        _context.prev = 50;
+                        try {
+                          frame.close();
+                        } catch (_) {}
+                        return _context.finish(50);
+                      case 53:
+                        _context.next = 0;
+                        break;
+                      case 55:
+                      case "end":
+                        return _context.stop();
+                    }
+                  }, _callee, null, [[2, 8], [17, 47, 50, 53], [27, 41]]);
+                }));
+                return function loop() {
+                  return _ref2.apply(this, arguments);
+                };
+              }();
+              loop();
+
+              // best-effort: if stopped by track inactivity
+              (_videoTrack$addEventL = videoTrack.addEventListener) === null || _videoTrack$addEventL === void 0 || _videoTrack$addEventL.call(videoTrack, "ended", function () {
+                if (!_this._stopRequested) _this.stop();
+              });
+
+              // keep stop timer reference
+              this._stopTimer = stopTimer;
+              return _context2.abrupt("return", {
+                code: ERR_CODE.OK,
+                message: "camera dump started",
+                stream: stream
+              });
+            case 71:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this, [[13, 19], [32, 41], [45, 49]]);
+      }));
+      function start() {
+        return _start.apply(this, arguments);
+      }
+      return start;
+    }()
+  }, {
+    key: "stop",
+    value: function () {
+      var _stop = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+        var _this$_trackReader, _this$_trackReader2, _this$_trackReader2$r, recorder;
+        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              if (!this._stopRequested) {
+                _context3.next = 2;
+                break;
+              }
+              return _context3.abrupt("return");
+            case 2:
+              this._stopRequested = true;
+              this.state = "stopping";
+              this._logEvent("stop.request", "");
+              this._emitProgress();
+              if (this._stopTimer) {
+                clearTimeout(this._stopTimer);
+                this._stopTimer = null;
+              }
+
+              // stop analysis reader
+              _context3.prev = 7;
+              _context3.next = 10;
+              return (_this$_trackReader = this._trackReader) === null || _this$_trackReader === void 0 ? void 0 : _this$_trackReader.cancel();
+            case 10:
+              _context3.next = 14;
+              break;
+            case 12:
+              _context3.prev = 12;
+              _context3.t0 = _context3["catch"](7);
+            case 14:
+              _context3.prev = 14;
+              _context3.next = 17;
+              return (_this$_trackReader2 = this._trackReader) === null || _this$_trackReader2 === void 0 || (_this$_trackReader2$r = _this$_trackReader2.releaseLock) === null || _this$_trackReader2$r === void 0 ? void 0 : _this$_trackReader2$r.call(_this$_trackReader2);
+            case 17:
+              _context3.next = 21;
+              break;
+            case 19:
+              _context3.prev = 19;
+              _context3.t1 = _context3["catch"](14);
+            case 21:
+              this._trackReader = null;
+              this._processor = null;
+
+              // stop recorder
+              recorder = this._mediaRecorder;
+              if (!(recorder && recorder.state !== "inactive")) {
+                _context3.next = 27;
+                break;
+              }
+              _context3.next = 27;
+              return new Promise(function (resolve) {
+                recorder.addEventListener("stop", resolve, {
+                  once: true
+                });
+                try {
+                  recorder.stop();
+                } catch (_) {
+                  resolve();
+                }
+              });
+            case 27:
+              this._mediaRecorder = null;
+
+              // stop tracks
+              this.stopTracks();
+              // clear stream reference to help GC and make it explicit that camera is released
+              this.stream = null;
+              this._stopWallMs = safeNowMs();
+              this.state = "stopped";
+              this._logEvent("stopped", "");
+              this._emitProgress();
+            case 34:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, this, [[7, 12], [14, 19]]);
+      }));
+      function stop() {
+        return _stop.apply(this, arguments);
+      }
+      return stop;
+    }()
+  }, {
+    key: "stopTracks",
+    value: function stopTracks() {
+      try {
+        var _this$stream, _this$stream$getTrack;
+        (_this$stream = this.stream) === null || _this$stream === void 0 || (_this$stream$getTrack = _this$stream.getTracks) === null || _this$stream$getTrack === void 0 || _this$stream$getTrack.call(_this$stream).forEach(function (t) {
+          return t.stop();
+        });
+      } catch (_) {}
+    }
+  }, {
+    key: "getSummary",
+    value: function getSummary() {
+      var durationMs = this._stopWallMs && this._startWallMs ? Math.max(0, this._stopWallMs - this._startWallMs) : 0;
+      var blackRatio = this._frameCount > 0 ? this._blackCount / this._frameCount : 0;
+      return {
+        durationMs: durationMs,
+        frames: this._frameCount,
+        blackFrames: this._blackCount,
+        blackRatio: blackRatio
+      };
+    }
+  }, {
+    key: "buildBundleBlob",
+    value: function () {
+      var _buildBundleBlob = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        var _this$_mediaRecorder, _this$stream2, _this$stream2$getVide, videoBlob, track, settings, capabilities, _track$getSettings, _track$getCapabilitie, meta, eventsJsonl, framesJsonl, entries, _iterator, _step, t, tar;
+        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              _context4.prev = 0;
+              videoBlob = new Blob(this._videoBlobs, {
+                type: ((_this$_mediaRecorder = this._mediaRecorder) === null || _this$_mediaRecorder === void 0 ? void 0 : _this$_mediaRecorder.mimeType) || "video/webm"
+              });
+              track = (_this$stream2 = this.stream) === null || _this$stream2 === void 0 || (_this$stream2$getVide = _this$stream2.getVideoTracks) === null || _this$stream2$getVide === void 0 || (_this$stream2$getVide = _this$stream2$getVide.call(_this$stream2)) === null || _this$stream2$getVide === void 0 ? void 0 : _this$stream2$getVide[0];
+              settings = null;
+              capabilities = null;
+              try {
+                settings = (track === null || track === void 0 || (_track$getSettings = track.getSettings) === null || _track$getSettings === void 0 ? void 0 : _track$getSettings.call(track)) || null;
+              } catch (_) {}
+              try {
+                capabilities = (track === null || track === void 0 || (_track$getCapabilitie = track.getCapabilities) === null || _track$getCapabilitie === void 0 ? void 0 : _track$getCapabilitie.call(track)) || null;
+              } catch (_) {}
+              meta = {
+                schema: "probesdk.cameraDump.v1",
+                createdAt: new Date().toISOString(),
+                ua: navigator.userAgent,
+                options: _objectSpread2(_objectSpread2({}, this.opts), {}, {
+                  onProgress: undefined // avoid serializing function
+                }),
+                track: {
+                  settings: settings,
+                  capabilities: capabilities
+                },
+                summary: this.getSummary()
+              };
+              eventsJsonl = this._events.map(toJsonlLine).join("");
+              framesJsonl = this._framesJsonl.join("");
+              entries = [{
+                name: "meta.json",
+                data: JSON.stringify(meta, null, 2)
+              }, {
+                name: "video.webm",
+                data: videoBlob
+              }, {
+                name: "frames.jsonl",
+                data: framesJsonl
+              }, {
+                name: "events.jsonl",
+                data: eventsJsonl
+              }]; // thumbnails (optional)
+              if (this._thumbEntries.length > 0) {
+                _iterator = _createForOfIteratorHelper(this._thumbEntries);
+                try {
+                  for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                    t = _step.value;
+                    entries.push({
+                      name: t.name,
+                      data: t.blob
+                    });
+                  }
+                  // include an index for thumbs
+                } catch (err) {
+                  _iterator.e(err);
+                } finally {
+                  _iterator.f();
+                }
+                entries.push({
+                  name: "thumbs/index.json",
+                  data: JSON.stringify(this._thumbEntries.map(function (t) {
+                    return {
+                      name: t.name,
+                      tWallMs: t.tWallMs,
+                      tsMs: t.tsMs
+                    };
+                  }), null, 2)
+                });
+              }
+              _context4.next = 14;
+              return buildTarBlob(entries);
+            case 14:
+              tar = _context4.sent;
+              if (!this.opts.gzip) {
+                _context4.next = 19;
+                break;
+              }
+              _context4.next = 18;
+              return gzipBlobIfSupported(tar);
+            case 18:
+              tar = _context4.sent;
+            case 19:
+              return _context4.abrupt("return", tar);
+            case 22:
+              _context4.prev = 22;
+              _context4.t0 = _context4["catch"](0);
+              this._logEvent("bundle.error", _context4.t0.message);
+              throw _context4.t0;
+            case 26:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this, [[0, 22]]);
+      }));
+      function buildBundleBlob() {
+        return _buildBundleBlob.apply(this, arguments);
+      }
+      return buildBundleBlob;
+    }()
+  }, {
+    key: "downloadBundle",
+    value: function () {
+      var _downloadBundle = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
+        var filename,
+          name,
+          ts,
+          blob,
+          _args5 = arguments;
+        return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
+            case 0:
+              filename = _args5.length > 0 && _args5[0] !== undefined ? _args5[0] : "";
+              name = filename;
+              if (!name) {
+                ts = formatTsForName(new Date());
+                name = this.opts.gzip ? "camera-dump-".concat(ts, ".probe.tar.gz") : "camera-dump-".concat(ts, ".probe.tar");
+              }
+              _context5.next = 5;
+              return this.buildBundleBlob();
+            case 5:
+              blob = _context5.sent;
+              triggerDownload(blob, name);
+              return _context5.abrupt("return", {
+                code: ERR_CODE.OK,
+                message: "bundle downloaded",
+                filename: name
+              });
+            case 8:
+            case "end":
+              return _context5.stop();
+          }
+        }, _callee5, this);
+      }));
+      function downloadBundle() {
+        return _downloadBundle.apply(this, arguments);
+      }
+      return downloadBundle;
+    }()
+  }]);
+}();
+
+/**
+ * screen_share_helper.js
+ *
+ * Helper functions for screen-share diagnostics.
+ * Uses the shared Detector (ua-parser-js) for all UA / OS / browser detection.
+ */
+
+/**
+ * Build a detection facade from a navigator-like object using ua-parser-js.
+ * Works in both the bundled SDK (Rollup) and bare Node.js (tests).
+ * @ignore
+ */
+function _buildDetector(nav) {
+  var parser = new uaParserJs.UAParser(nav.userAgent || "");
+  var b = parser.getBrowser();
+  var o = parser.getOS();
+  var d = parser.getDevice();
+  var browserNameLower = (b.name || "").toLowerCase();
+  return {
+    getBrowser: function getBrowser() {
+      return {
+        getBrowserName: function getBrowserName() {
+          return browserNameLower;
+        },
+        getBrowserVersion: function getBrowserVersion() {
+          return b.version || "0";
+        },
+        isChrome: function isChrome() {
+          return browserNameLower.includes("chrome");
+        },
+        isFirefox: function isFirefox() {
+          return browserNameLower.includes("firefox");
+        },
+        isEdge: function isEdge() {
+          return browserNameLower.includes("edge");
+        },
+        isOpera: function isOpera() {
+          return browserNameLower.includes("opera");
+        },
+        isSafari: function isSafari() {
+          return browserNameLower.includes("safari");
+        },
+        isSafariVersionHigherThan: function isSafariVersionHigherThan(ver) {
+          if (!browserNameLower.includes("safari")) return false;
+          return parseInt(b.major || "0", 10) >= parseInt(ver, 10);
+        }
+      };
+    },
+    getOS: function getOS() {
+      return {
+        getOSName: function getOSName() {
+          return o.name || "Unknown";
+        }
+      };
+    },
+    getDevice: function getDevice() {
+      var type = (d.type || "").toLowerCase();
+      return {
+        isMobileDevice: function isMobileDevice() {
+          return type === "mobile";
+        },
+        isTablet: function isTablet() {
+          return type === "tablet";
+        }
+      };
+    }
+  };
+}
+function _isOffscreenCanvasSupported() {
+  return typeof OffscreenCanvas === "function";
+}
+
+// ─── Check-item factory helpers (inline, no import needed) ───────────────────
+
+function _genOsReq(matched, label, value) {
+  return {
+    index: 1,
+    label: "OS Requirement",
+    matched: matched,
+    tip: "OS(".concat(label, ") is required. (os:").concat(value, ")")
+  };
+}
+function _genBrowserVersionReq(matched, browsers, browserName, version) {
+  return {
+    index: 2,
+    label: "Browser Version Requirement",
+    matched: matched,
+    tip: "Please use the suggested browsers and versions(".concat(browsers, "). (browser: ").concat(browserName, " version:").concat(version, ")")
+  };
+}
+function _genApiRequired(matched, label, value) {
+  return {
+    index: 5,
+    label: "API Requirement",
+    matched: matched,
+    tip: "API(name:".concat(label, ") is required. Is supported?(").concat(value, ")")
+  };
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+/**
+ * Run prerequisite static checks for screen sharing.
+ * No user interaction required. Returns early on first critical failure.
+ *
+ * @ignore
+ * @param {object} nav - the navigator object
+ * @returns {{ passed: boolean, checkList: object[], failedMessage: string|null, suggestedAction: string|null }}
+ */
+function runStaticChecks(nav) {
+  var checkList = [];
+  var detector = _buildDetector(nav);
+  var browser = detector.getBrowser();
+  var os = detector.getOS();
+  var device = detector.getDevice();
+
+  // 1. Mobile device check
+  var isMobile = device.isMobileDevice() || device.isTablet();
+  checkList.push(_genOsReq(!isMobile, "non-mobile OS required", os.getOSName()));
+  if (isMobile) {
+    return {
+      passed: false,
+      checkList: checkList,
+      failedMessage: "Mobile devices do not support screen sharing.",
+      suggestedAction: "Please use a desktop browser to run the screen share diagnostic."
+    };
+  }
+
+  // 2. Secure context (HTTPS required by spec for getDisplayMedia)
+  var isSecure = typeof window !== "undefined" && window.isSecureContext === true;
+  checkList.push(_genApiRequired(isSecure, "Secure Context (HTTPS)", "".concat(isSecure)));
+  if (!isSecure) {
+    return {
+      passed: false,
+      checkList: checkList,
+      failedMessage: "Screen sharing requires a secure context (HTTPS).",
+      suggestedAction: "Please access this page over HTTPS and try again."
+    };
+  }
+
+  // 3. Browser version check
+  var isBrowserSupported = browser.isChrome() || browser.isFirefox() || browser.isEdge() || browser.isOpera() || browser.isSafari() && browser.isSafariVersionHigherThan("17");
+  checkList.push(_genBrowserVersionReq(isBrowserSupported, "Chrome/Edge/Firefox/Opera/Safari(>=17)", browser.getBrowserName(), browser.getBrowserVersion()));
+  if (!isBrowserSupported) {
+    return {
+      passed: false,
+      checkList: checkList,
+      failedMessage: "Your browser does not support screen sharing.",
+      suggestedAction: "Please upgrade to the latest version of Chrome, Edge, or Firefox."
+    };
+  }
+
+  // 4. getDisplayMedia API existence
+  var hasGDM = !!(nav.mediaDevices && nav.mediaDevices.getDisplayMedia);
+  checkList.push(_genApiRequired(hasGDM, "getDisplayMedia", "".concat(hasGDM)));
+  if (!hasGDM) {
+    return {
+      passed: false,
+      checkList: checkList,
+      failedMessage: "Your browser does not support the getDisplayMedia API.",
+      suggestedAction: "Please upgrade to the latest version of your browser."
+    };
+  }
+
+  // 5. OffscreenCanvas (needed for frame analysis)
+  var hasOffscreen = _isOffscreenCanvasSupported();
+  checkList.push(_genApiRequired(hasOffscreen, "OffscreenCanvas", "".concat(hasOffscreen)));
+
+  // 6. Permissions API (availability only; not blocking)
+  var hasPermissionsApi = typeof navigator !== "undefined" && typeof navigator.permissions !== "undefined";
+  checkList.push(_genApiRequired(hasPermissionsApi, "Permissions API", "".concat(hasPermissionsApi)));
+  return {
+    passed: true,
+    checkList: checkList,
+    failedMessage: null,
+    suggestedAction: null
+  };
+}
+
+/**
+ * Classify a DOMException from getDisplayMedia() into a structured result.
+ *
+ * @ignore
+ * @param {Error} error
+ * @returns {{ isSystemDenied: boolean, isUserCancelled: boolean, errorType: string, errorMessage: string, suggestedAction: string|null }}
+ */
+function classifyPermissionError(error) {
+  if (error.name === "NotAllowedError") {
+    var isSystem = /system/i.test(error.message);
+    if (isSystem) {
+      return {
+        isSystemDenied: true,
+        isUserCancelled: false,
+        errorType: error.name,
+        errorMessage: error.message,
+        suggestedAction: "Go to System Settings → Privacy & Security → Screen Recording and enable access for your browser, then try again."
+      };
+    }
+    return {
+      isSystemDenied: false,
+      isUserCancelled: true,
+      errorType: error.name,
+      errorMessage: error.message,
+      suggestedAction: "Please select a screen to share in the picker and click Share."
+    };
+  }
+  if (error.name === "NotFoundError") {
+    return {
+      isSystemDenied: false,
+      isUserCancelled: false,
+      errorType: error.name,
+      errorMessage: error.message,
+      suggestedAction: "No display source was found. Please check your monitor connections."
+    };
+  }
+  return {
+    isSystemDenied: false,
+    isUserCancelled: false,
+    errorType: error.name || "UnknownError",
+    errorMessage: error.message || "",
+    suggestedAction: null
+  };
+}
+
+/**
+ * Compute average luminance of a VideoFrame.
+ * Privacy guarantee: VideoFrame data is read as scalars only.
+ * The canvas and ImageData are discarded immediately after computation.
+ *
+ * @ignore
+ * @param {VideoFrame} frame  - must have displayWidth and displayHeight
+ * @returns {number}  average luminance 0–255
+ */
+function calcAvgLuminance(frame) {
+  if (!frame || !frame.displayWidth || !frame.displayHeight) return 0;
+  var canvas;
+  if (_isOffscreenCanvasSupported()) {
+    canvas = new OffscreenCanvas(frame.displayWidth, frame.displayHeight);
+  } else {
+    canvas = document.createElement("canvas");
+    canvas.width = frame.displayWidth;
+    canvas.height = frame.displayHeight;
+  }
+  var ctx = canvas.getContext("2d");
+  ctx.drawImage(frame, 0, 0);
+  var imageData = ctx.getImageData(0, 0, frame.displayWidth, frame.displayHeight);
+  var data = imageData.data; // Uint8ClampedArray [R,G,B,A, ...]
+
+  var total = 0;
+  var pixelCount = data.length / 4;
+  for (var i = 0; i < data.length; i += 4) {
+    // BT.601 luminance formula
+    total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  }
+
+  // Discard canvas and pixel data immediately — no caching
+  canvas = null;
+  return pixelCount > 0 ? total / pixelCount : 0;
+}
+
+/**
+ * Build the engineer-facing diagnostic dump.
+ * Privacy guarantee: contains only metadata, zero pixel/image content.
+ *
+ * @ignore
+ * @param {object} nav    - navigator object
+ * @param {Error|null} error
+ * @returns {object}
+ */
+function buildEngineeringDump(nav, error) {
+  var detector = _buildDetector(nav);
+  var browser = detector.getBrowser();
+  var os = detector.getOS();
+  return {
+    userAgent: nav.userAgent || "",
+    osName: os.getOSName(),
+    browserName: browser.getBrowserName(),
+    browserVersion: browser.getBrowserVersion(),
+    isHTTPS: typeof window !== "undefined" && window.isSecureContext === true,
+    getDisplayMediaAvailable: !!(nav.mediaDevices && nav.mediaDevices.getDisplayMedia),
+    errorStack: error ? error.stack || null : null,
+    timestamp: new Date().toISOString()
+  };
+}
+
+var BLACK_THRESHOLD = 8; // luminance 0–255; below this = black frame
+var BLACK_SCREEN_RATIO_THRESHOLD = 0.8; // >80% black frames = black screen
+
+var DEFAULT_OPTIONS = {
+  frameSampleCount: 10,
+  frameSampleDurationMs: 3000,
+  displayMediaConstraints: {
+    video: true
+  }
+};
+
+/**
+ * Run a full 3-phase screen share diagnostic.
+ *
+ * @ignore
+ * @param {function} releaseMediaStream  - Prober.releaseMediaStream bound to the Prober instance
+ * @param {object}   [options]
+ * @param {function} [progressListener]  - called with { phase, state, message, data }
+ * @returns {Promise<ScreenShareDiagnosticResult>}
+ */
+function diagnoseScreenShare(_x) {
+  return _diagnoseScreenShare.apply(this, arguments);
+}
+
+/**
+ * Sample frames from a MediaStream and return aggregate luminance metrics.
+ * Privacy: VideoFrame is closed immediately after scalar extraction.
+ * @ignore
+ */
+function _diagnoseScreenShare() {
+  _diagnoseScreenShare = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(releaseMediaStream) {
+    var options,
+      progressListener,
+      opts,
+      notify,
+      staticResult,
+      stream,
+      classified,
+      frameAnalysis,
+      isBlack,
+      code,
+      message,
+      suggestedAction,
+      _args = arguments;
+    return _regeneratorRuntime().wrap(function _callee$(_context) {
+      while (1) switch (_context.prev = _context.next) {
+        case 0:
+          options = _args.length > 1 && _args[1] !== undefined ? _args[1] : {};
+          progressListener = _args.length > 2 && _args[2] !== undefined ? _args[2] : undefined;
+          opts = _objectSpread2(_objectSpread2({}, DEFAULT_OPTIONS), options);
+          notify = function notify(phase, state, message) {
+            var data = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+            if (progressListener) progressListener({
+              phase: phase,
+              state: state,
+              message: message,
+              data: data
+            });
+          }; // ── Phase 1: Static checks ─────────────────────────────────────────────────
+          notify("static", "started", "Running static environment checks...");
+          staticResult = runStaticChecks(navigator);
+          if (staticResult.passed) {
+            _context.next = 9;
+            break;
+          }
+          notify("static", "failed", staticResult.failedMessage, {
+            checkList: staticResult.checkList
+          });
+          return _context.abrupt("return", {
+            code: ERR_CODE.SCREEN_SHARE_STATIC_CHECK_FAILED,
+            message: staticResult.failedMessage,
+            phase: "static",
+            staticChecks: staticResult.checkList,
+            permissionResult: null,
+            frameAnalysis: null,
+            suggestedAction: staticResult.suggestedAction,
+            engineeringDump: buildEngineeringDump(navigator, null)
+          });
+        case 9:
+          notify("static", "passed", "Static checks passed.", {
+            checkList: staticResult.checkList
+          });
+
+          // ── Phase 2: Permission capture ────────────────────────────────────────────
+          notify("permission", "started", "Requesting screen share permission — please select a source in the picker...");
+          stream = null;
+          _context.prev = 12;
+          _context.next = 15;
+          return navigator.mediaDevices.getDisplayMedia(opts.displayMediaConstraints);
+        case 15:
+          stream = _context.sent;
+          _context.next = 23;
+          break;
+        case 18:
+          _context.prev = 18;
+          _context.t0 = _context["catch"](12);
+          classified = classifyPermissionError(_context.t0);
+          notify("permission", "failed", classified.suggestedAction || _context.t0.message, classified);
+          return _context.abrupt("return", {
+            code: classified.isUserCancelled ? ERR_CODE.SCREEN_SHARE_USER_CANCELLED : ERR_CODE.SCREEN_SHARE_PERMISSION_DENIED,
+            message: classified.suggestedAction || _context.t0.message,
+            phase: "permission",
+            staticChecks: staticResult.checkList,
+            permissionResult: {
+              granted: false,
+              errorType: classified.errorType,
+              errorMessage: classified.errorMessage,
+              isSystemDenied: classified.isSystemDenied,
+              isUserCancelled: classified.isUserCancelled
+            },
+            frameAnalysis: null,
+            suggestedAction: classified.suggestedAction,
+            engineeringDump: buildEngineeringDump(navigator, _context.t0)
+          });
+        case 23:
+          notify("permission", "passed", "Screen share permission granted.");
+
+          // ── Phase 3: Frame quality analysis ───────────────────────────────────────
+          notify("frame_analysis", "started", "Analyzing screen share frame quality...");
+          frameAnalysis = null;
+          _context.prev = 26;
+          _context.next = 29;
+          return _analyzeFrames(stream, opts);
+        case 29:
+          frameAnalysis = _context.sent;
+          _context.next = 36;
+          break;
+        case 32:
+          _context.prev = 32;
+          _context.t1 = _context["catch"](26);
+          if (isDebugMode()) {
+            console.error("diagnoseScreenShare: frame analysis error", _context.t1);
+          }
+          frameAnalysis = {
+            sampleCount: 0,
+            blackFrameCount: 0,
+            blackFrameRatio: 1,
+            avgLuminance: 0,
+            isBlackScreen: true
+          };
+        case 36:
+          _context.prev = 36;
+          releaseMediaStream(stream); // always release — privacy guarantee
+          return _context.finish(36);
+        case 39:
+          isBlack = frameAnalysis.isBlackScreen;
+          code = isBlack ? ERR_CODE.SCREEN_SHARE_BLACK_SCREEN : ERR_CODE.OK;
+          message = isBlack ? "Screen share capture is all-black. Please check your display settings." : "Screen share diagnostic passed.";
+          suggestedAction = isBlack ? "Try selecting a different share source, or check your GPU driver and display settings." : null;
+          notify("frame_analysis", isBlack ? "failed" : "passed", message, frameAnalysis);
+          return _context.abrupt("return", {
+            code: code,
+            message: message,
+            phase: "completed",
+            staticChecks: staticResult.checkList,
+            permissionResult: {
+              granted: true,
+              errorType: null,
+              errorMessage: null,
+              isSystemDenied: false,
+              isUserCancelled: false
+            },
+            frameAnalysis: frameAnalysis,
+            suggestedAction: suggestedAction,
+            engineeringDump: buildEngineeringDump(navigator, null)
+          });
+        case 45:
+        case "end":
+          return _context.stop();
+      }
+    }, _callee, null, [[12, 18], [26, 32, 36, 39]]);
+  }));
+  return _diagnoseScreenShare.apply(this, arguments);
+}
+function _analyzeFrames(_x2, _x3) {
+  return _analyzeFrames2.apply(this, arguments);
+}
+function _analyzeFrames2() {
+  _analyzeFrames2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(stream, opts) {
+    var track, processor, reader, blackCount, totalLuminance, actualCount, timeoutId, timeoutPromise, i, raceResult, frame, lum, blackFrameRatio;
+    return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+      while (1) switch (_context2.prev = _context2.next) {
+        case 0:
+          track = stream.getVideoTracks()[0];
+          processor = new MediaStreamTrackProcessor({
+            track: track
+          });
+          reader = processor.readable.getReader();
+          blackCount = 0;
+          totalLuminance = 0;
+          actualCount = 0; // Timeout promise to cap sampling window
+          timeoutPromise = new Promise(function (resolve) {
+            timeoutId = setTimeout(resolve, opts.frameSampleDurationMs);
+          });
+          _context2.prev = 7;
+          i = 0;
+        case 9:
+          if (!(i < opts.frameSampleCount)) {
+            _context2.next = 24;
+            break;
+          }
+          _context2.next = 12;
+          return Promise.race([reader.read(), timeoutPromise.then(function () {
+            return {
+              done: true
+            };
+          })]);
+        case 12:
+          raceResult = _context2.sent;
+          if (!raceResult.done) {
+            _context2.next = 15;
+            break;
+          }
+          return _context2.abrupt("break", 24);
+        case 15:
+          frame = raceResult.value;
+          lum = calcAvgLuminance(frame);
+          if (lum < BLACK_THRESHOLD) blackCount++;
+          totalLuminance += lum;
+          actualCount++;
+          frame.close(); // release immediately — privacy guarantee
+        case 21:
+          i++;
+          _context2.next = 9;
+          break;
+        case 24:
+          _context2.prev = 24;
+          clearTimeout(timeoutId);
+          _context2.next = 28;
+          return reader.cancel().catch(function () {});
+        case 28:
+          return _context2.finish(24);
+        case 29:
+          blackFrameRatio = actualCount > 0 ? blackCount / actualCount : 1;
+          return _context2.abrupt("return", {
+            sampleCount: actualCount,
+            blackFrameCount: blackCount,
+            blackFrameRatio: blackFrameRatio,
+            avgLuminance: actualCount > 0 ? totalLuminance / actualCount : 0,
+            isBlackScreen: blackFrameRatio > BLACK_SCREEN_RATIO_THRESHOLD
+          });
+        case 31:
+        case "end":
+          return _context2.stop();
+      }
+    }, _callee2, null, [[7,, 24, 29]]);
+  }));
+  return _analyzeFrames2.apply(this, arguments);
+}
+
+/**
  * Prober provides the capabilities of requesting the media permissions and devices,
  * diagnosing the devices and network, and reporting the diagnostic result, etc. It's easy
  * to create an instance of Prober class and use it to implement your own probing requirements.
@@ -5057,6 +6576,75 @@ var Prober = /*#__PURE__*/function () {
     }
 
     /**
+     * Start a camera dump session for offline troubleshooting.
+     *
+     * This feature is designed to help diagnose issues like camera preview flicker/black frames by:
+     * - Recording the selected camera stream into a small `video.webm`
+     * - Collecting per-frame luminance statistics (`frames.jsonl`) to locate black frames precisely
+     * - Capturing basic track events (`events.jsonl`)
+     * - Packaging everything into a single downloadable bundle (`.probe.tar` or `.probe.tar.gz`)
+     *
+     * Chrome-only note: This API relies on {@link MediaStreamTrackProcessor}.
+     *
+     * @typedef {Object} CameraDumpStartResult
+     * @property {number} code
+     * @property {string} message
+     * @property {CameraDumpSession} [session] An active camera dump session on success.
+     * @property {MediaStream} [stream] The camera MediaStream on success (optional).
+     *
+     * @async
+     * @function startCameraDump
+     * @param {CameraDumpOptions} [options] Optional. If omitted, defaults will be used.
+     * @returns {Promise<CameraDumpStartResult>}
+     *
+     * @example
+     * // Minimal: use browser default camera + default low-res/low-bitrate settings
+     * const { code, session } = await prober.startCameraDump();
+     *
+     * // Or specify a camera deviceId
+     * const { code, session } = await prober.startCameraDump({ deviceId, durationMs: 120000, width: 320, height: 180 });
+     * // ... later
+     * await session.stop();
+     * await session.downloadBundle();
+     */
+  }, {
+    key: "startCameraDump",
+    value: (function () {
+      var _startCameraDump = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(options) {
+        var session, result;
+        return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
+            case 0:
+              // options is optional for better usability; defaults are applied in CameraDumpSession.
+              session = new CameraDumpSession(options || {});
+              _context7.next = 3;
+              return session.start();
+            case 3:
+              result = _context7.sent;
+              if (!(result.code !== ERR_CODE.OK)) {
+                _context7.next = 6;
+                break;
+              }
+              return _context7.abrupt("return", result);
+            case 6:
+              return _context7.abrupt("return", {
+                code: ERR_CODE.OK,
+                message: result.message,
+                session: session,
+                stream: result.stream
+              });
+            case 7:
+            case "end":
+              return _context7.stop();
+          }
+        }, _callee7);
+      }));
+      function startCameraDump(_x6) {
+        return _startCameraDump.apply(this, arguments);
+      }
+      return startCameraDump;
+    }()
+    /**
      * An object describes the statistics of a network diagnostic.
      *
      * @typedef {object} NetworkDiagnosticStatsData
@@ -5067,7 +6655,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {number} rtt the round-trip time(ms).
      * @property {number} network_level the quality level of the network, refer to {@link NETWORK_QUALITY_LEVEL}.
      */
-
     /**
      * An object describes the report of the final and average statistics of a network diagnostic.
      *
@@ -5085,7 +6672,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {number} downlink_bw_level the last downlink bandwidth quality level, refer to {@link BANDWIDTH_QUALITY_LEVEL}.
      * @property {number} downlink_network_level the last downlink network quality level, refer to {@link NETWORK_QUALITY_LEVEL}.
      */
-
     /**
      * An object describes the content/data part of the real-time network diagnostic statistics.
      *
@@ -5093,7 +6679,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {string} path indicates the statistics coming from uplink or downlink.
      * @property {NetworkDiagnosticStatsData} statistics the statistics of uplink or downlink.
      */
-
     /**
      * An object describes the real-time network diagnostic statistics.
      *
@@ -5101,14 +6686,12 @@ var Prober = /*#__PURE__*/function () {
      * @property {number} type indicates whether the data is a real-time statistics or the final report. Refer to {@link NET_PROBING_DATA_TYPE} for details.
      * @property {NetworkDiagnosticStatsContent} content indicates the content of the real-time statistics.
      */
-
     /**
      * A function object is used as a listener to listen the network diagnostic statistics.
      *
      * @typedef {object} NetworkStatsListener
      * @property {function} onStatsReceived callback function which receives an instance of {@link NetworkDiagnosticStats}.
      */
-
     /**
      * An object represents the details of protocols which are used in the network diagnostics.
      *
@@ -5119,7 +6702,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {string} tip a tip will help if the protocol or port is blocked or not.
      * @property {*} error some customized errors or standard errors, like {@link https://developer.mozilla.org/en-US/docs/Web/API/DOMException|DOMException}, will be thrown if any. If no exceptions, it is undefined.
      */
-
     /**
      * An object describes the report of the network diagnostic.
      *
@@ -5129,14 +6711,12 @@ var Prober = /*#__PURE__*/function () {
      * @property {NetworkDiagnosticStatsReport} statistics the final report of the network diagnostic statistics.
      * @property {string} rid a string is used to track this round of network diagnosis.
      */
-
     /**
      * An object describes an entry of an affected feature.
      *
      * @typedef {object} AffectedFeatureEntry
      * @property {string} featureName the name of an affected feature.
      */
-
     /**
      * An object describes an entry of basic information.
      *
@@ -5147,7 +6727,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {boolean} critical whether the attribute is critical or not. If true, the attribute is critical and a list of affected features will be attached to the affectedFeatures field.
      * @property {Array<AffectedFeatureEntry>} affectedFeatures an array of affected features if the {@link critical} value is true, that is, a group of features might be affected if this attribute is not matched.
      */
-
     /**
      * An object describes an entry of a supported feature checking.
      *
@@ -5157,7 +6736,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {boolean} matched indicates whether a condition of the requirement is matched or not.
      * @property {string} tip a tip will help if the condition is not {@link matched}.
      */
-
     /**
      * An object describes a piece of supported feature.
      *
@@ -5167,7 +6745,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {boolean} isSupported whether the feature is supported or not.
      * @property {Array<CheckItem>} checkList an array of {@link CheckItem} which are used to judge whether the conditions of a supported features are matched or not.
      */
-
     /**
      * An object describes a report of the entire diagnostic.
      *
@@ -5176,7 +6753,6 @@ var Prober = /*#__PURE__*/function () {
      * @property {Array<BasicInfoEntry>} basicInfo a set of basic information, like browser, OS, hardware, etc.
      * @property {Array<FeatureEntry>} supportedFeatures a set of features that are important to the user.
      */
-
     /**
      * Start a full diagnostic that includes the network diagnostic, basic information, and supported features report .
      * It depends on the network diagnostic. Once it is called, the network diagnostic begins, and a report will be generated automatically after it ends.
@@ -5205,6 +6781,7 @@ var Prober = /*#__PURE__*/function () {
      *  console.log(report);
      * });
      */
+    )
   }, {
     key: "startToDiagnose",
     value: function startToDiagnose() {
@@ -5256,19 +6833,19 @@ var Prober = /*#__PURE__*/function () {
   }, {
     key: "stopToDiagnose",
     value: (function () {
-      var _stopToDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
-        return _regeneratorRuntime().wrap(function _callee7$(_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
+      var _stopToDiagnose = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+        return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
-              _context7.next = 2;
+              _context8.next = 2;
               return _classPrivateFieldGet2(_networkAgent, this).stopDiagnose();
             case 2:
-              return _context7.abrupt("return", _context7.sent);
+              return _context8.abrupt("return", _context8.sent);
             case 3:
             case "end":
-              return _context7.stop();
+              return _context8.stop();
           }
-        }, _callee7, this);
+        }, _callee8, this);
       }));
       function stopToDiagnose() {
         return _stopToDiagnose.apply(this, arguments);
@@ -5304,6 +6881,70 @@ var Prober = /*#__PURE__*/function () {
     value: function cleanup() {
       _classPrivateFieldGet2(_networkAgent, this).cleanup();
     }
+
+    /**
+     * Perform a full screen share diagnostic across three phases:
+     * 1. Static environment checks (no user interaction)
+     * 2. Permission capture via getDisplayMedia() (user selects share source)
+     * 3. Frame quality analysis — luminance metrics only, no pixel storage
+     *
+     * @async
+     * @function diagnoseScreenShare
+     * @param {object} [options]
+     * @param {number} [options.frameSampleCount=10]      number of frames to sample
+     * @param {number} [options.frameSampleDurationMs=3000] max sampling window in ms
+     * @param {object} [options.displayMediaConstraints={ video: true }]
+     * @param {function} [progressListener]  callback({ phase, state, message, data })
+     * @returns {Promise<ScreenShareDiagnosticResult>}
+     *
+     * @example
+     * import { Prober, ERR_CODE } from "@zoom/probesdk";
+     * const prober = new Prober();
+     *
+     * const result = await prober.diagnoseScreenShare(
+     *   { frameSampleCount: 10, frameSampleDurationMs: 3000 },
+     *   ({ phase, state, message }) => {
+     *     console.log(`[${phase}] ${state}: ${message}`);
+     *   }
+     * );
+     *
+     * if (result.code === ERR_CODE.OK) {
+     *   console.log("Screen share diagnostic passed.");
+     * } else if (result.code === ERR_CODE.SCREEN_SHARE_USER_CANCELLED) {
+     *   console.warn("User cancelled the share picker.");
+     * } else if (result.code === ERR_CODE.SCREEN_SHARE_PERMISSION_DENIED) {
+     *   console.error("Permission denied:", result.suggestedAction);
+     * } else if (result.code === ERR_CODE.SCREEN_SHARE_BLACK_SCREEN) {
+     *   console.error("Black screen detected:", result.suggestedAction);
+     * } else if (result.code === ERR_CODE.SCREEN_SHARE_STATIC_CHECK_FAILED) {
+     *   console.error("Environment check failed:", result.message);
+     * }
+     * console.log("Engineering dump:", result.engineeringDump);
+     */
+  }, {
+    key: "diagnoseScreenShare",
+    value: (function () {
+      var _diagnoseScreenShare2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+        var options,
+          progressListener,
+          _args9 = arguments;
+        return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+          while (1) switch (_context9.prev = _context9.next) {
+            case 0:
+              options = _args9.length > 0 && _args9[0] !== undefined ? _args9[0] : {};
+              progressListener = _args9.length > 1 && _args9[1] !== undefined ? _args9[1] : undefined;
+              return _context9.abrupt("return", diagnoseScreenShare(this.releaseMediaStream.bind(this), options, progressListener));
+            case 3:
+            case "end":
+              return _context9.stop();
+          }
+        }, _callee9, this);
+      }));
+      function diagnoseScreenShare$1() {
+        return _diagnoseScreenShare2.apply(this, arguments);
+      }
+      return diagnoseScreenShare$1;
+    }())
   }]);
 }();
 function _checkArgTypes(arg, types) {
@@ -5316,74 +6957,74 @@ function _checkArgTypes(arg, types) {
   }
   return hasOneTypePassCheck;
 }
-function _isRendererTypeSupported(_x6) {
+function _isRendererTypeSupported(_x7) {
   return _isRendererTypeSupported2.apply(this, arguments);
 }
 function _isRendererTypeSupported2() {
-  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(rendererType) {
-    return _regeneratorRuntime().wrap(function _callee9$(_context9) {
-      while (1) switch (_context9.prev = _context9.next) {
+  _isRendererTypeSupported2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(rendererType) {
+    return _regeneratorRuntime().wrap(function _callee11$(_context11) {
+      while (1) switch (_context11.prev = _context11.next) {
         case 0:
-          return _context9.abrupt("return", new Promise( /*#__PURE__*/function () {
-            var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(resolve) {
+          return _context11.abrupt("return", new Promise( /*#__PURE__*/function () {
+            var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10(resolve) {
               var isWebGLSupported, isWebGL2Supported, isWebGPUSupported;
-              return _regeneratorRuntime().wrap(function _callee8$(_context8) {
-                while (1) switch (_context8.prev = _context8.next) {
+              return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+                while (1) switch (_context10.prev = _context10.next) {
                   case 0:
                     if (!(rendererType === RENDERER_TYPE.VIDEO_TAG)) {
-                      _context8.next = 4;
+                      _context10.next = 4;
                       break;
                     }
                     resolve(true);
-                    _context8.next = 22;
+                    _context10.next = 22;
                     break;
                   case 4:
                     if (!(rendererType === RENDERER_TYPE.WEBGL)) {
-                      _context8.next = 9;
+                      _context10.next = 9;
                       break;
                     }
                     isWebGLSupported = Feature.isWebGLSupported();
                     resolve(isWebGLSupported);
-                    _context8.next = 22;
+                    _context10.next = 22;
                     break;
                   case 9:
                     if (!(rendererType === RENDERER_TYPE.WEBGL_2)) {
-                      _context8.next = 14;
+                      _context10.next = 14;
                       break;
                     }
                     isWebGL2Supported = Feature.isWebGL2Supported();
                     resolve(isWebGL2Supported);
-                    _context8.next = 22;
+                    _context10.next = 22;
                     break;
                   case 14:
                     if (!(rendererType === RENDERER_TYPE.WEBGPU)) {
-                      _context8.next = 21;
+                      _context10.next = 21;
                       break;
                     }
-                    _context8.next = 17;
+                    _context10.next = 17;
                     return Feature.isWebGPUSupported();
                   case 17:
-                    isWebGPUSupported = _context8.sent;
+                    isWebGPUSupported = _context10.sent;
                     resolve(isWebGPUSupported);
-                    _context8.next = 22;
+                    _context10.next = 22;
                     break;
                   case 21:
                     resolve(false);
                   case 22:
                   case "end":
-                    return _context8.stop();
+                    return _context10.stop();
                 }
-              }, _callee8);
+              }, _callee10);
             }));
-            return function (_x7) {
+            return function (_x8) {
               return _ref3.apply(this, arguments);
             };
           }()));
         case 1:
         case "end":
-          return _context9.stop();
+          return _context11.stop();
       }
-    }, _callee9);
+    }, _callee11);
   }));
   return _isRendererTypeSupported2.apply(this, arguments);
 }

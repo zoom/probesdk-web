@@ -163,6 +163,178 @@ function stopToDiagnoseVideo() {
 prober.releaseMediaStream(videoDiagnosticResult.stream);
 ```
 
+## Camera Dump (Offline Bundle) - `startCameraDump()`
+
+When you need to troubleshoot **camera capture quality** and collect evidence from end users (without building an upload pipeline),
+`startCameraDump()` lets you record a short segment from a camera and export a single offline bundle for analysis.
+
+For example, if users report preview anomalies (e.g. flicker or intermittent black frames), a dump bundle helps engineers verify what the
+captured stream looked like over time and correlate it with basic track events and frame statistics.
+
+`startCameraDump()` helps you **export an offline evidence bundle** from a selected camera:
+- `video.webm`: a short recording of the captured camera stream (small, low-bitrate by default)
+- `frames.jsonl`: per-frame luminance statistics to precisely locate black frames / flicker patterns
+- `events.jsonl`: track/recorder events (mute/unmute/ended, etc.)
+- `meta.json`: environment + track settings/capabilities + dump options
+
+The output is a single downloadable file: **`.probe.tar`** (or **`.probe.tar.gz`** if gzip is enabled).
+Users can send this file to you without any upload capability inside ProbeSDK.
+
+> Privacy notice: Camera Dump records camera content. Please inform end users in advance and obtain their consent before running.
+> Any data provided by customers is intended **solely for troubleshooting camera capture quality** (i.e., verifying whether frames captured from the camera are normal),
+> and will not be used for any other analysis, processing, or activities beyond diagnostic support for this issue.
+> If the customer is not comfortable with this collection, they may decline to run Camera Dump.
+
+### Browser support
+
+- **Chrome/Chromium only** (requires `MediaStreamTrackProcessor`)
+
+### Quick start
+
+Below is a more explicit, step-by-step usage flow so you know **what happens at each stage** and what to expect.
+
+#### Prepare (permission)
+
+Make sure the user has granted camera permission (otherwise `getUserMedia` will fail).
+
+#### Configure (optional)
+
+You can pass an `options` object, or omit it to use defaults:
+- Default camera (no `deviceId` constraint)
+- `320x180`, `15fps`, `~250kbps`, `120s`
+
+> Tip: For troubleshooting, keep resolution/bitrate small to reduce bundle size.
+
+#### Start dump
+
+```javascript
+import { Prober } from "@zoom/probesdk";
+
+const prober = new Prober();
+
+async function startDump() {
+  // Minimal: use browser default camera + defaults
+  const { code, message, session } = await prober.startCameraDump();
+  console.log(code, message);
+  if (code !== 0 || !session) return null;
+
+  // Keep the session reference for stop/download.
+  return session;
+}
+```
+
+#### Stop dump (optional)
+
+The dump **stops automatically** when `durationMs` elapses. You can also stop it earlier:
+
+```javascript
+async function stopDump(session) {
+  if (!session) return;
+  await session.stop();
+  console.log("summary:", session.getSummary());
+}
+```
+
+Stopping the dump will stop the underlying camera tracks so the **hardware camera indicator light should turn off** shortly after.
+
+> Note: Web applications cannot programmatically revoke a previously granted camera permission in the browser UI.
+> Stopping the dump releases the camera device, but the permission grant remains until the user changes it in browser site settings.
+
+#### Download bundle
+
+After the dump has stopped (auto or manual), download the offline bundle:
+
+```javascript
+async function downloadDump(session) {
+  if (!session) return;
+  // Generates and downloads:
+  // - .probe.tar (default), or
+  // - .probe.tar.gz (if gzip=true)
+  await session.downloadBundle(); // e.g. camera-dump-2025-12-13_10-20-30.probe.tar
+}
+```
+
+#### Send to Zoom
+
+ProbeSDK itself does not upload. The end user/customer should **send the downloaded bundle**
+(`.probe.tar` / `.probe.tar.gz`) to **Zoom** for analysis.
+
+### Specify a camera device and tuning parameters
+
+```javascript
+import { Prober } from "@zoom/probesdk";
+
+const prober = new Prober();
+
+async function runCameraDumpWithOptions(deviceId) {
+  const { code, session } = await prober.startCameraDump({
+    deviceId,              // optional; if omitted, browser picks default camera
+    durationMs: 120000,     // default 120000 (120s)
+    width: 320,            // default 320
+    height: 180,           // default 180
+    frameRate: 15,         // default 15
+    videoBitsPerSecond: 250000, // default 250000 (~250kbps)
+
+    // Optional: thumbnails for quick visual sanity checks (may increase bundle size)
+    thumbFps: 0,           // default 0 (disabled). Example: 1 => ~1 thumbnail per second
+
+    // Optional: gzip the tar bundle (Chrome only; requires DecompressionStream on analyzer side)
+    gzip: false,           // default false
+
+    // Optional: progress callback (for UI)
+    onProgress: (p) => {
+      // p includes: state, elapsedMs, frames, blackFrames, blackRatio, remainingMs (best-effort)
+      console.log("dump progress:", p);
+    },
+  });
+
+  if (code !== 0 || !session) return;
+
+  // Stop early if needed
+  // await session.stop();
+
+  // Download the bundle after stop
+  await session.downloadBundle();
+}
+```
+
+## Diagnose screen sharing
+
+Invoke `diagnoseScreenShare` to verify whether screen sharing will work on the current device and browser. The diagnostic runs three phases automatically:
+
+1. **Static checks** — verifies the environment (OS, browser, HTTPS, APIs) without any user interaction.
+2. **Permission capture** — calls `getDisplayMedia()` so the user selects a share source.
+3. **Frame quality analysis** — samples frames and checks for an all-black capture. Only luminance scalars are extracted; no pixel data is stored or transmitted.
+
+```javascript
+import { Prober, ERR_CODE } from "@zoom/probesdk";
+
+const prober = new Prober();
+
+const result = await prober.diagnoseScreenShare(
+  { frameSampleCount: 10, frameSampleDurationMs: 3000 },
+  ({ phase, state, message }) => {
+    console.log(`[${phase}] ${state}: ${message}`);
+  }
+);
+
+if (result.code === ERR_CODE.OK) {
+  console.log("Screen share diagnostic passed.");
+} else if (result.code === ERR_CODE.SCREEN_SHARE_USER_CANCELLED) {
+  console.warn("User cancelled the share picker.");
+} else if (result.code === ERR_CODE.SCREEN_SHARE_PERMISSION_DENIED) {
+  console.error("Permission denied.", result.suggestedAction);
+} else if (result.code === ERR_CODE.SCREEN_SHARE_BLACK_SCREEN) {
+  console.error("Black screen detected.", result.suggestedAction);
+} else if (result.code === ERR_CODE.SCREEN_SHARE_STATIC_CHECK_FAILED) {
+  console.error("Environment check failed:", result.message);
+}
+```
+
+> Privacy notice: Frame analysis reads only per-frame average luminance (a single number). No screenshots, pixel arrays, or canvas content are stored or transmitted. The `MediaStream` is released immediately after sampling completes.
+
+> Note: `getDisplayMedia()` requires a secure context (HTTPS) and is not supported on mobile browsers.
+
 ## Start a comprehensive diagnostic test
 
 Perform a network diagnostic to return a network diagnostic report that also includes basic information and supported features.
@@ -446,6 +618,27 @@ Some licenses for OSS contained in our products give you the right to access the
     <th>Y(125)</th>
     <th>Y(17.5)</th>
     <th>Y(126.2)</th>
+  </tr>
+  <tr>
+    <th rowspan="1">diagnoseScreenShare</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(125.0.1 64-bit)</th>
+    <th>Y(124 64-bit)</th>
+    <th>Y(110 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(126.0.1 64-bit)</th>
+    <th>Y(125 64-bit)</th>
+    <th>Y(110 64-bit)</th>
+    <th>Y(17.5)</th>
+    <th>Y(113 64-bit)</th>
+    <th>Y(114.0 64-bit)</th>
+    <th>Y(124 64-bit)</th>
+    <th>N</th>
+    <th>N</th>
+    <th>N</th>
+    <th>N</th>
+    <th>N</th>
+    <th>N</th>
   </tr>
 </table>
 
